@@ -1,0 +1,27 @@
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
+use App\Enums\OrderStatus;
+
+class Order extends Model
+{
+    use SoftDeletes;
+
+    protected $table = 'orders';
+    public $timestamps = false; // Tu script usa DEFAULT CURRENT_TIMESTAMP manualmente
+
+    protected $fillable = ['table_id', 'user_id', 'client_id', 'status', 'total'];
+
+    protected $casts = [
+        'status' => OrderStatus::class,
+        'total' => 'decimal:2',
+    ];
+
+    // Relación: Un pedido pertenece a una mesa
+    public function mesa() {
+        return $this->belongsTo(Mesa::class, 'table_id');
+    }
+}
