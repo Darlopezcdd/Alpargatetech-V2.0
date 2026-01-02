@@ -13,6 +13,7 @@ Route::post('/logout', [LoginController::class, 'logout'])->name('logout');
 
 // Ruta del Dashboard Protegida
 // El middleware 'auth' asegura que nadie entre sin loguearse
+// Modifica la ruta del dashboard en routes/web.php
 Route::get('/dashboard', function () {
     return view('dashboard');
-})->middleware('auth')->name('dashboard');
+})->middleware(['auth', 'role:admin'])->name('dashboard');
