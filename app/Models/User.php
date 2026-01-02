@@ -2,10 +2,11 @@
 
 namespace App\Models;
 
-// use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use App\Models\SessionLog;
+use App\Enums\UserRole; // Asegúrate de importar tu Enum
 
 class User extends Authenticatable
 {
@@ -13,42 +14,37 @@ class User extends Authenticatable
     use HasFactory, Notifiable;
 
     /**
-     * The attributes that are mass assignable.
-     *
-     * @var list<string>
+     * Campos que se pueden llenar masivamente.
+     * Es vital para que el LoginController pueda actualizar el login_at.
      */
     protected $fillable = [
         'name',
         'email',
         'password',
+        'role'   // REQUERIDO para RF-02
     ];
 
-    /**
-     * The attributes that should be hidden for serialization.
-     *
-     * @var list<string>
-     */
     protected $hidden = [
         'password',
         'remember_token',
     ];
 
     /**
-     * Get the attributes that should be cast.
-     *
-     * @return array<string, string>
+     * Unificamos todos los casts en este método.
+     * Esto convierte automáticamente los datos de la DB a objetos PHP.
      */
     protected function casts(): array
     {
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
+            'role' => UserRole::class // Convierte el string 'admin' al objeto Enum
         ];
     }
-    protected $casts = [
-        'role' => \App\Enums\UserRole::class,
-        'login_at' => 'datetime',
-    ];
+
+    /**
+     * Relación con la tabla de auditoría de sesiones.
+     */
     public function sessions()
     {
         return $this->hasMany(SessionLog::class, 'user_id');
