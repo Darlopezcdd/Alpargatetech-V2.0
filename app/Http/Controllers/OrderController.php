@@ -9,7 +9,8 @@ use App\Enums\OrderStatus;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use App\Models\Payment;
-use DB;
+use Illuminate\Support\Facades\DB;
+use App\Events\OrderSentToKitchen;
 class OrderController extends Controller
 {
 
@@ -59,25 +60,36 @@ class OrderController extends Controller
         $categories = \App\Models\Category::with('products')->get();
         return view('orders.show', compact('order', 'categories'));
     }
+//    public function sendToKitchen(Order $order)
+//    {
+//        $order->update(['status' => \App\Enums\OrderStatus::EN_COCINA]);
+//
+//        // LÓGICA DE EXPERTO: Transmitimos el evento al túnel WebSocket
+//        broadcast(new OrderSentToKitchen($order))->toOthers();
+//
+//        return redirect()->route('mesas.index')->with('success', 'Pedido enviado.');
+//    }
     public function sendToKitchen(Order $order)
     {
-        $order->update([
-            'status' => \App\Enums\OrderStatus::EN_COCINA
-        ]);
+        $order->update(['status' => \App\Enums\OrderStatus::EN_COCINA]);
 
-        return redirect()->route('mesas.index')->with('success', 'Pedido enviado a cocina.');
+        // Difundir a todos, incluyéndome a mí para la prueba
+        broadcast(new OrderSentToKitchen($order));
+
+        return redirect()->route('mesas.index')->with('success', 'Pedido enviado.');
     }
-    public function kitchenIndex()
-    {
-        $orders = Order::whereIn('status', [
-            \App\Enums\OrderStatus::EN_COCINA,
-            \App\Enums\OrderStatus::EN_PREPARACION
-        ])
-            ->with(['items.product', 'mesa'])
-            ->orderBy('created_at', 'asc')
-            ->get();
+    // En OrderController.php
+    public function kitchenIndex() {
+        $orders = Order::whereIn('status', [OrderStatus::EN_COCINA, OrderStatus::EN_PREPARACION])->get();
 
-        return view('kitchen.index', compact('orders'));
+        // Guardamos la cuenta actual en la sesión para comparar luego
+        $oldCount = session('order_count', 0);
+        $newCount = $orders->count();
+
+        $playAlert = ($newCount > $oldCount);
+        session(['order_count' => $newCount]);
+
+        return view('kitchen.index', compact('orders', 'playAlert'));
     }
     public function updateStatus(Request $request, Order $order)
     {
@@ -103,5 +115,27 @@ class OrderController extends Controller
 
         return redirect()->route('mesas.index')->with('success', 'Mesa liberada y pago registrado.');
     }
+    public function checkout(Order $order, Request $request)
+    {
+        $request->validate([
+            'payment_method' => 'required|string'
+        ]);
+
+        DB::transaction(function () use ($order, $request) {
+
+            Payment::create([
+                'order_id' => $order->id,
+                'amount' => $order->total,
+                'payment_method' => $request->payment_method,
+            ]);
+
+            $order->update(['status' => OrderStatus::ENTREGADO]);
+
+            $order->mesa->update(['status' => TableStatus::LIBRE]);
+        });
+
+        return redirect()->route('mesas.index')->with('success', 'Pago procesado. Mesa ' . $order->mesa->number . ' ahora está libre.');
+    }
+
 
 }

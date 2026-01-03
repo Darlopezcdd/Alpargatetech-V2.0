@@ -25,9 +25,14 @@
                                 Abrir Pedido
                             </a>
                         @else
-                            <a href="#" style="background: #007bff; color: white; padding: 8px; text-decoration: none; border-radius: 5px;">
-                                Ver Detalle
-                            </a>
+                            @if($mesa->currentOrder)
+                                <a href="{{ route('orders.show', $mesa->currentOrder->id) }}"
+                                   style="background: #007bff; color: white; padding: 8px; text-decoration: none; border-radius: 5px; display: inline-block; margin-top: 5px;">
+                                    Ver Detalle
+                                </a>
+                            @else
+                                <span style="color: gray; font-size: 0.8em;">Sin pedido activo</span>
+                            @endif
                         @endif
                     </div>
                 </div>

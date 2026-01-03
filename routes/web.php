@@ -46,4 +46,5 @@ Route::middleware(['auth'])->group(function () {
 
     // 4. Facturación y Cierre (RF-15)
     Route::post('/orders/{order}/pay', [OrderController::class, 'pay'])->name('orders.pay');
+    Route::post('/orders/{order}/checkout', [OrderController::class, 'checkout'])->name('orders.checkout');
 });

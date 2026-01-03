@@ -37,7 +37,25 @@
             </table>
             <hr>
             <h2 style="text-align: right;">Total: ${{ number_format($order->total, 2) }}</h2>
+            {{-- Debajo del total en el resumen del pedido --}}
+            <div style="margin-top: 20px; border-top: 2px dashed #ccc; padding-top: 10px;">
+                <h4>Cerrar Cuenta</h4>
+                <form action="{{ route('orders.checkout', $order->id) }}" method="POST">
+                    @csrf
+                    <label>Método de Pago:</label>
+                    <select name="payment_method" required style="width: 100%; padding: 5px; margin-bottom: 10px;">
+                        <option value="Efectivo">Efectivo</option>
+                        <option value="Tarjeta">Tarjeta</option>
+                        <option value="Transferencia">Transferencia</option>
+                    </select>
 
+                    <button type="submit"
+                            style="width: 100%; padding: 10px; background: #28a745; color: white; border: none; font-weight: bold; cursor: pointer;"
+                            onclick="return confirm('¿Confirmar pago y liberar mesa?')">
+                        REGISTRAR PAGO Y LIBERAR MESA
+                    </button>
+                </form>
+            </div>
             <form action="{{ route('orders.send-to-kitchen', $order->id) }}" method="POST">
                 @csrf
                 <button type="submit" style="width: 100%; padding: 15px; background: #ffc107; font-weight: bold; border: none; cursor: pointer;">

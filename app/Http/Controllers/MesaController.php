@@ -9,7 +9,8 @@ class MesaController extends Controller
 {
     public function index()
     {
-        $mesas = Mesa::orderBy('number')->get();
+        // Cargamos las mesas y su pedido actual para tener el ID a mano
+        $mesas = Mesa::with('currentOrder')->orderBy('number')->get();
 
         return view('mesas.index', compact('mesas'));
     }

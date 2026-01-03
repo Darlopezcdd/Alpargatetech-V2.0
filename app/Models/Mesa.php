@@ -22,4 +22,14 @@ class Mesa extends Model
     protected $casts = [
         'status' => TableStatus::class,
     ];
+    public function currentOrder()
+    {
+        // Buscamos el último pedido de esta mesa que NO esté Entregado ni Cancelado
+        return $this->hasOne(Order::class, 'table_id')
+            ->whereNotIn('status', [
+                \App\Enums\OrderStatus::ENTREGADO,
+                \App\Enums\OrderStatus::CANCELADO
+            ])
+            ->latest();
+    }
 }
