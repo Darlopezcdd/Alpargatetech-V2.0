@@ -2,6 +2,7 @@
 use App\Http\Controllers\LoginController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\MesaController;
+use App\Http\Controllers\OrderController;
 
 Route::get('/', function () {
     return view('welcome');
@@ -30,3 +31,19 @@ Route::get('/cocina', [OrderController::class, 'kitchenIndex'])
 // Ruta genérica para actualizar estados de pedido
 Route::post('/orders/{order}/status', [OrderController::class, 'updateStatus'])
     ->name('orders.update-status');
+
+// Rutas para la gestión de pedidos (RF-06, RF-08, RF-15)
+Route::middleware(['auth'])->group(function () {
+    // 1. Crear el pedido desde el mapa de mesas
+    Route::get('/orders/create', [OrderController::class, 'create'])->name('orders.create');
+
+    // 2. Ver la comanda para añadir productos
+    Route::get('/orders/{order}', [OrderController::class, 'show'])->name('orders.show');
+
+    // 3. Lógica para añadir platos y enviar a cocina
+    Route::post('/orders/{order}/add', [OrderController::class, 'addProduct'])->name('orders.add-product');
+    Route::post('/orders/{order}/send', [OrderController::class, 'sendToKitchen'])->name('orders.send-to-kitchen');
+
+    // 4. Facturación y Cierre (RF-15)
+    Route::post('/orders/{order}/pay', [OrderController::class, 'pay'])->name('orders.pay');
+});

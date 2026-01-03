@@ -14,15 +14,12 @@ class User extends Authenticatable
     /** @use HasFactory<\Database\Factories\UserFactory> */
     use HasFactory, Notifiable,SoftDeletes;
 
-    /**
-     * Campos que se pueden llenar masivamente.
-     * Es vital para que el LoginController pueda actualizar el login_at.
-     */
+
     protected $fillable = [
         'name',
         'email',
         'password',
-        'role',   // REQUERIDO para RF-02
+        'role',
     ];
 
     protected $hidden = [
@@ -30,22 +27,17 @@ class User extends Authenticatable
         'remember_token',
     ];
 
-    /**
-     * Unificamos todos los casts en este método.
-     * Esto convierte automáticamente los datos de la DB a objetos PHP.
-     */
+
     protected function casts(): array
     {
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
-            'role' => UserRole::class // Convierte el string 'admin' al objeto Enum
+            'role' => UserRole::class
         ];
     }
 
-    /**
-     * Relación con la tabla de auditoría de sesiones.
-     */
+
     public function sessions()
     {
         return $this->hasMany(SessionLog::class, 'user_id');

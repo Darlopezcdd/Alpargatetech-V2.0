@@ -6,7 +6,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Category extends Model
 {
-    use SoftDeletes; // Aplicado según tu ALTER TABLE
+    use SoftDeletes;
     protected $table = 'categories';
     public $timestamps = false;
     protected $fillable = ['name'];

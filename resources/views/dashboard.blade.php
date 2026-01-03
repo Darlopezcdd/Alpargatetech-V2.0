@@ -1,5 +1,6 @@
-<!DOCTYPE html>
-<html lang="es">
+@extends('layouts.app') {{-- O el layout que estés usando --}}
+@section('content')
+
 <head>
     <title>Dashboard - AlpargateTech</title>
 </head>
@@ -16,3 +17,4 @@
 </form>
 </body>
 </html>
+@endsection

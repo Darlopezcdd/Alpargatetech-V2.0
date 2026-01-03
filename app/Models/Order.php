@@ -11,7 +11,7 @@ class Order extends Model
     use SoftDeletes;
 
     protected $table = 'orders';
-    public $timestamps = false; // Tu script usa DEFAULT CURRENT_TIMESTAMP manualmente
+    public $timestamps = false;
 
     protected $fillable = ['table_id', 'user_id', 'client_id', 'status', 'total'];
 
@@ -20,8 +20,11 @@ class Order extends Model
         'total' => 'decimal:2',
     ];
 
-    // Relación: Un pedido pertenece a una mesa
     public function mesa() {
         return $this->belongsTo(Mesa::class, 'table_id');
+    }
+    public function items()
+    {
+        return $this->hasMany(OrderItem::class, 'order_id');
     }
 }
