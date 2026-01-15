@@ -14,7 +14,7 @@
                                 <form action="{{ route('orders.add-product', $order->id) }}" method="POST" style="margin-top: 5px;">
                                     @csrf
                                     <input type="hidden" name="product_id" value="{{ $product->id }}">
-                                    <input type="number" name="quantity" value="0" min="0" style="width: 40px;">
+                                    <input type="number" name="quantity" value="1" min="1" style="width: 40px;">
                                     <button type="submit" style="background: #007bff; color: white; border: none; padding: 5px;">+</button>
                                 </form>
                             </div>
