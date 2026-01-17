@@ -21,7 +21,7 @@ class RoleMiddleware
         }
 
         if (!in_array(Auth::user()->role->value, $roles)) {
-            abort(403, 'Acceso denegado: Tu rol no tiene permisos para esta área.');
+            return response()->view('errors.403', [], 403);
         }
 
         return $next($request);

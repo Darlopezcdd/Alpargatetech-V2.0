@@ -13,12 +13,24 @@ Route::get('/login', [LoginController::class, 'showLoginForm'])->name('login');
 Route::post('/login', [LoginController::class, 'login']);
 Route::post('/logout', [LoginController::class, 'logout'])->name('logout');
 
+// Rutas de Recuperación de Contraseña
+Route::get('/forgot-password', [App\Http\Controllers\PasswordResetController::class, 'showLinkRequestForm'])->name('password.request');
+Route::post('/forgot-password', [App\Http\Controllers\PasswordResetController::class, 'sendResetCode'])->name('password.email');
+Route::get('/verify-code', [App\Http\Controllers\PasswordResetController::class, 'showVerifyForm'])->name('password.verify');
+Route::post('/verify-code', [App\Http\Controllers\PasswordResetController::class, 'verifyCode'])->name('password.check');
+Route::get('/reset-password', [App\Http\Controllers\PasswordResetController::class, 'showResetForm'])->name('password.reset');
+Route::post('/reset-password', [App\Http\Controllers\PasswordResetController::class, 'resetPassword'])->name('password.update');
+
 // Ruta del Dashboard Protegida
 // El middleware 'auth' asegura que nadie entre sin loguearse
 // Modifica la ruta del dashboard en routes/web.php
 Route::get('/dashboard', function () {
     return view('dashboard');
 })->middleware(['auth', 'role:admin'])->name('dashboard');
+
+Route::resource('users', \App\Http\Controllers\UserController::class)
+    ->only(['index', 'create', 'store'])
+    ->middleware(['auth', 'role:admin']);
 
 Route::get('/mesas', [MesaController::class, 'index'])
     ->middleware(['auth', 'role:admin,mesero']) // Ambos roles pueden ver las mesas

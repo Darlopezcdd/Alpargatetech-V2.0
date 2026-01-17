@@ -8,12 +8,14 @@ use App\Http\Controllers\Controller;
 
 class LoginController extends Controller
 {
-    public function showLoginForm() {
+    public function showLoginForm()
+    {
         return view('auth.login');
     }
 
     // Procesa el login (RF-01)
-    public function login(Request $request) {
+    public function login(Request $request)
+    {
         $request->validate([
             'email' => 'required|email',
             'password' => 'required',
@@ -39,5 +41,13 @@ class LoginController extends Controller
             'ip_address' => $request->ip(),
             'login_at' => now(),
         ]);
+    }
+
+    public function logout(Request $request)
+    {
+        Auth::logout();
+        $request->session()->invalidate();
+        $request->session()->regenerateToken();
+        return redirect('/login');
     }
 }
