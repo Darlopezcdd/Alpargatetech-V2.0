@@ -59,4 +59,12 @@ Route::middleware(['auth'])->group(function () {
     // 4. Facturación y Cierre (RF-15)
     Route::post('/orders/{order}/pay', [OrderController::class, 'pay'])->name('orders.pay');
     Route::post('/orders/{order}/checkout', [OrderController::class, 'checkout'])->name('orders.checkout');
+
+
+// Rutas de 2FA (Añadir después de las rutas de login)
+    Route::middleware(['auth'])->group(function () {
+        Route::get('/verify-2fa', [App\Http\Controllers\Auth\VerifyTwoFactorController::class, 'index'])->name('verify-2fa.index');
+        Route::post('/verify-2fa', [App\Http\Controllers\Auth\VerifyTwoFactorController::class, 'store'])->name('verify-2fa.store');
+    });
+
 });

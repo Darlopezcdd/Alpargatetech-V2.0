@@ -36,7 +36,14 @@ class UserController extends Controller
         $request->validate([
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'string', 'lowercase', 'email', 'max:255', 'unique:' . User::class],
-            'password' => ['required', 'confirmed', Rules\Password::defaults()],
+            'password' => [
+                'required',
+                'confirmed', // Requiere un campo password_confirmation
+                Password::min(8)
+                    ->letters()   // Debe contener al menos una letra
+                    ->numbers()   // Debe contener al menos un número
+                    ->symbols()   // Debe contener al menos un símbolo (ej: !@#$%^&*)
+            ],
             'role' => ['required', Rule::enum(UserRole::class)],
         ]);
 

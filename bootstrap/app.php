@@ -17,6 +17,17 @@ return Application::configure(basePath: dirname(__DIR__))
             'role' => \App\Http\Middleware\RoleMiddleware::class,
         ]);
     })
+    ->withMiddleware(function (Middleware $middleware) {
+        $middleware->alias([
+            'role' => \App\Http\Middleware\RoleMiddleware::class,
+            '2fa' => \App\Http\Middleware\EnsureTwoFactorIsVerified::class, // Registra el tuyo aquí
+        ]);
+
+        // Aplicar 2FA a todas las rutas web excepto login/logout
+        $middleware->appendToGroup('web', \App\Http\Middleware\EnsureTwoFactorIsVerified::class);
+    })
     ->withExceptions(function (Exceptions $exceptions): void {
         //
     })->create();
+
+
