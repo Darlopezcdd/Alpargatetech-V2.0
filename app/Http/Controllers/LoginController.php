@@ -3,7 +3,7 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth; // Herramienta de autenticación
+use Illuminate\Support\Facades\Auth;
 use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Str;
@@ -36,15 +36,6 @@ class LoginController extends Controller
 //
 //        return back()->withErrors(['email' => 'Las credenciales no coinciden con nuestros registros.']);
 //    }
-
-
-
-
-
-
-
-
-
     protected function authenticated(Request $request, $user)
     {
         $user->sessions()->create([
@@ -52,7 +43,6 @@ class LoginController extends Controller
             'login_at' => now(),
         ]);
     }
-
     public function logout(Request $request)
     {
         Auth::logout();
@@ -60,12 +50,6 @@ class LoginController extends Controller
         $request->session()->regenerateToken();
         return redirect('/login');
     }
-
-
-
-
-
-
 //    public function store(Request $request)
 //    {
 //        $request->validate([
