@@ -60,7 +60,7 @@ class OrderController extends Controller
         $categories = \App\Models\Category::with('products')->get();
         return view('orders.show', compact('order', 'categories'));
     }
-//    public function sendToKitchen(Order $order)
+    //    public function sendToKitchen(Order $order)
 //    {
 //        $order->update(['status' => \App\Enums\OrderStatus::EN_COCINA]);
 //
@@ -79,8 +79,14 @@ class OrderController extends Controller
         return redirect()->route('mesas.index')->with('success', 'Pedido enviado.');
     }
     // En OrderController.php
-    public function kitchenIndex() {
-        $orders = Order::whereIn('status', [OrderStatus::EN_COCINA, OrderStatus::EN_PREPARACION])->get();
+    public function kitchenIndex()
+    {
+        $orders = Order::whereIn('status', [
+            OrderStatus::EN_COCINA,
+            OrderStatus::EN_PREPARACION
+        ])
+            ->orderBy('id', 'asc') // Ordenar por llegada
+            ->get();
 
         // Guardamos la cuenta actual en la sesión para comparar luego
         $oldCount = session('order_count', 0);
@@ -99,6 +105,12 @@ class OrderController extends Controller
 
         return back()->with('success', 'Estado del pedido #' . $order->id . ' actualizado.');
     }
+    public function downloadInvoice(Order $order)
+    {
+        $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('invoices.pdf', compact('order'));
+        return $pdf->download('nota_venta_' . $order->id . '.pdf');
+    }
+
     public function pay(Request $request, Order $order)
     {
         DB::transaction(function () use ($order, $request) {
@@ -113,8 +125,10 @@ class OrderController extends Controller
             $order->mesa->update(['status' => TableStatus::LIBRE]);
         });
 
-        return redirect()->route('mesas.index')->with('success', 'Mesa liberada y pago registrado.');
+        // Flash con enlace de descarga
+        return redirect()->route('mesas.index')->with('success', 'Pago registrado. <a href="' . route('orders.download-invoice', $order->id) . '" target="_blank" class="inline-block px-3 py-1 bg-yellow-500 text-white font-bold rounded hover:bg-yellow-600 transition-colors ml-2 no-underline">Descargar Nota de Venta</a>');
     }
+
     public function checkout(Order $order, Request $request)
     {
         $request->validate([
@@ -134,8 +148,6 @@ class OrderController extends Controller
             $order->mesa->update(['status' => TableStatus::LIBRE]);
         });
 
-        return redirect()->route('mesas.index')->with('success', 'Pago procesado. Mesa ' . $order->mesa->number . ' ahora está libre.');
+        return redirect()->route('mesas.index')->with('success', 'Pago procesado. <a href="' . route('orders.download-invoice', $order->id) . '" target="_blank" class="inline-block px-3 py-1 bg-yellow-500 text-white font-bold rounded hover:bg-yellow-600 transition-colors ml-2 no-underline">Descargar Nota de Venta</a>');
     }
-
-
 }

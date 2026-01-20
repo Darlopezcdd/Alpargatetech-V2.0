@@ -22,11 +22,9 @@ Route::get('/reset-password', [App\Http\Controllers\PasswordResetController::cla
 Route::post('/reset-password', [App\Http\Controllers\PasswordResetController::class, 'resetPassword'])->name('password.update');
 
 // Ruta del Dashboard Protegida
-// El middleware 'auth' asegura que nadie entre sin loguearse
-// Modifica la ruta del dashboard en routes/web.php
-Route::get('/dashboard', function () {
-    return view('dashboard');
-})->middleware(['auth', 'role:admin'])->name('dashboard');
+Route::get('/dashboard', [\App\Http\Controllers\DashboardController::class, 'index'])
+    ->middleware(['auth', 'role:admin'])
+    ->name('dashboard');
 
 Route::resource('users', \App\Http\Controllers\UserController::class)
     ->only(['index', 'create', 'store'])
@@ -52,6 +50,9 @@ Route::middleware(['auth'])->group(function () {
     // 2. Ver la comanda para añadir productos
     Route::get('/orders/{order}', [OrderController::class, 'show'])->name('orders.show');
 
+    // DESCARGAR FACTURA
+    Route::get('/orders/{order}/invoice', [OrderController::class, 'downloadInvoice'])->name('orders.download-invoice');
+
     // 3. Lógica para añadir platos y enviar a cocina
     Route::post('/orders/{order}/add', [OrderController::class, 'addProduct'])->name('orders.add-product');
     Route::post('/orders/{order}/send', [OrderController::class, 'sendToKitchen'])->name('orders.send-to-kitchen');
@@ -61,7 +62,7 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/orders/{order}/checkout', [OrderController::class, 'checkout'])->name('orders.checkout');
 
 
-// Rutas de 2FA (Añadir después de las rutas de login)
+    // Rutas de 2FA (Añadir después de las rutas de login)
     Route::middleware(['auth'])->group(function () {
         Route::get('/verify-2fa', [App\Http\Controllers\Auth\VerifyTwoFactorController::class, 'index'])->name('verify-2fa.index');
         Route::post('/verify-2fa', [App\Http\Controllers\Auth\VerifyTwoFactorController::class, 'store'])->name('verify-2fa.store');

@@ -77,7 +77,8 @@
                             <div class="ml-3">
                                 <p class="text-sm font-medium text-white">{{ Auth::user()->name }}</p>
                                 <p class="text-xs font-medium text-gray-300 group-hover:text-gray-200">
-                                    {{ strtoupper(Auth::user()->role->value) }}</p>
+                                    {{ strtoupper(Auth::user()->role->value) }}
+                                </p>
                             </div>
                         </div>
                         <form action="{{ route('logout') }}" method="POST" class="mt-3">
@@ -117,7 +118,7 @@
                         @if(session('success'))
                             <div class="mb-4 bg-green-100 border-l-4 border-green-500 text-green-700 p-4" role="alert">
                                 <p class="font-bold">Éxito</p>
-                                <p>{{ session('success') }}</p>
+                                <p>{!! session('success') !!}</p>
                             </div>
                         @endif
                         @if(session('error'))

@@ -11,7 +11,7 @@ class Order extends Model
     use SoftDeletes;
 
     protected $table = 'orders';
-    public $timestamps = false;
+    public $timestamps = true;
 
     protected $fillable = ['table_id', 'user_id', 'client_id', 'status', 'total'];
 
@@ -20,7 +20,8 @@ class Order extends Model
         'total' => 'decimal:2',
     ];
 
-    public function mesa() {
+    public function mesa()
+    {
         return $this->belongsTo(Mesa::class, 'table_id');
     }
     public function items()
