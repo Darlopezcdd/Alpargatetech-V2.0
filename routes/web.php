@@ -45,8 +45,11 @@ Route::post('/orders/{order}/status', [OrderController::class, 'updateStatus'])
 // Rutas para la gestión de pedidos (RF-06, RF-08, RF-15)
 Route::middleware(['auth'])->group(function () {
     // 1. Crear el pedido desde el mapa de mesas
+// El botón del mapa ahora es GET, solo para ver el menú
     Route::get('/orders/create', [OrderController::class, 'create'])->name('orders.create');
 
+    // Este es el que procesa la operación Maestro-Detalle con Rollback
+    Route::post('/orders/store', [OrderController::class, 'store'])->name('orders.store');
     // 2. Ver la comanda para añadir productos
     Route::get('/orders/{order}', [OrderController::class, 'show'])->name('orders.show');
 

@@ -1,7 +1,9 @@
 <?php
 
 namespace App\Http\Controllers;
-
+use Illuminate\Support\Facades\DB;
+use Exception;
+use App\Models\OrderItem;
 use App\Models\Order;
 use App\Models\Mesa;
 use App\Enums\TableStatus;
@@ -9,51 +11,43 @@ use App\Enums\OrderStatus;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use App\Models\Payment;
-use Illuminate\Support\Facades\DB;
 use App\Events\OrderSentToKitchen;
 class OrderController extends Controller
 {
 
     public function create(Request $request)
     {
+        // Solo buscamos la mesa y el menú; nada de nacimientos vacíos en la DB
         $mesa = \App\Models\Mesa::findOrFail($request->table_id);
+        $categories = \App\Models\Category::with('products')->get();
+        return view('orders.create', compact('mesa', 'categories'));
 
-        $order = \App\Models\Order::create([
-            'table_id' => $mesa->id,
-            'user_id' => auth()->id(), // El mesero que está logueado
-            'status' => \App\Enums\OrderStatus::ANOTADO,
-            'total' => 0
-        ]);
-
-        $mesa->update(['status' => \App\Enums\TableStatus::OCUPADA]);
-
-        return redirect()->route('orders.show', $order->id)
-            ->with('success', 'Pedido abierto en Mesa ' . $mesa->number);
     }
     public function addProduct(Request $request, Order $order)
     {
-        $request->validate([
-            'quantity' => 'required|integer|min:0',
-            'product_id' => 'required|exists:products,id'
-        ], [
-            'quantity.min' => 'Debes seleccionar al menos 0 unidad para añadir al pedido.'
-        ]);
+        $request->validate(['product_id' => 'required|exists:products,id', 'quantity' => 'required|integer|min:1']);
 
-        $product = \App\Models\Product::findOrFail($request->product_id);
+        DB::beginTransaction();
+        try {
+            $product = \App\Models\Product::findOrFail($request->product_id);
+            $subtotal = $product->price * $request->quantity;
 
-        $quantity = $request->quantity;
-        $subtotal = $product->price * $quantity;
+            // Si esto falla, el total no se incrementa
+            $order->items()->create([
+                'product_id' => $product->id,
+                'quantity' => $request->quantity,
+                'subtotal' => $subtotal,
+                'notes' => $request->notes
+            ]);
 
-        $order->items()->create([
-            'product_id' => $product->id,
-            'quantity' => $quantity,
-            'notes' => $request->notes,
-            'subtotal' => $subtotal
-        ]);
+            $order->increment('total', $subtotal);
 
-        $order->increment('total', $subtotal);
-
-        return back()->with('success', $product->name . ' añadido al pedido.');
+            DB::commit();
+            return back()->with('success', 'Producto añadido y total actualizado.');
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return back()->with('error', 'Error al añadir producto: ' . $e->getMessage());
+        }
     }
     public function show(\App\Models\Order $order)
     {
@@ -150,4 +144,100 @@ class OrderController extends Controller
 
         return redirect()->route('mesas.index')->with('success', 'Pago procesado. <a href="' . route('orders.download-invoice', $order->id) . '" target="_blank" class="inline-block px-3 py-1 bg-yellow-500 text-white font-bold rounded hover:bg-yellow-600 transition-colors ml-2 no-underline">Descargar Nota de Venta</a>');
     }
+//    public function RollbackMal(Request $request)
+//    {
+//        // 1. Validar que la petición sea completa (Evita el error de null)
+//        $request->validate([
+//            'table_id' => 'required|exists:tables,id',
+//            'items'    => 'required|array|min:1', // Obliga a que 'items' sea un arreglo con al menos 1 plato
+//        ], [
+//            'items.required' => 'No puedes crear un pedido vacío. Selecciona al menos un producto.'
+//        ]);
+//
+//        DB::beginTransaction();
+//
+//        try {
+//            // 2. Operación Maestro: Crear el Pedido
+//            $order = Order::create([
+//                'table_id' => $request->table_id,
+//                'user_id'  => auth()->id(),
+//                'status'   => \App\Enums\OrderStatus::ANOTADO,
+//                'total'    => 0,
+//            ]);
+//
+//            $totalPedido = 0;
+//
+//            // 3. Operación Detalle: Insertar los productos
+//            foreach ($request->items as $item) {
+//                $producto = \App\Models\Product::findOrFail($item['product_id']);
+//                $subtotal = $producto->price * $item['quantity'];
+//
+//                OrderItem::create([
+//                    'order_id'   => $order->id,
+//                    'product_id' => $item['product_id'],
+//                    'quantity'   => $item['quantity'],
+//                    'subtotal'   => $subtotal,
+//                    'notes'      => $item['notes'] ?? null,
+//                ]);
+//
+//                $totalPedido += $subtotal;
+//            }
+//
+//            // 4. Actualizar el total y la mesa
+//            $order->update(['total' => $totalPedido]);
+//            $order->mesa->update(['status' => \App\Enums\TableStatus::OCUPADA]);
+//
+//            DB::commit();
+//
+//            return redirect()->route('mesas.index')->with('success', 'Pedido #'.$order->id.' creado con éxito.');
+//
+//        } catch (Exception $e) {
+//            DB::rollBack();
+//            return back()->with('error', 'Error al procesar el pedido: ' . $e->getMessage());
+//        }
+//    }
+
+    public function store(Request $request)
+    {
+        $request->validate([
+            'table_id' => 'required|exists:tables,id',
+            'items' => 'required|array|min:1',
+        ]);
+
+        DB::beginTransaction();
+        try {
+            $order = Order::create([
+                'table_id' => $request->table_id,
+                'user_id' => auth()->id(),
+                'status' => $request->has('send_to_kitchen') ? \App\Enums\OrderStatus::EN_COCINA : \App\Enums\OrderStatus::ANOTADO,
+                'total' => 0
+            ]);
+
+            $total = 0;
+            foreach ($request->items as $item) {
+                $product = \App\Models\Product::findOrFail($item['product_id']);
+                $subtotal = $product->price * $item['quantity'];
+                $order->items()->create([
+                    'product_id' => $product->id,
+                    'quantity' => $item['quantity'],
+                    'subtotal' => $subtotal
+                ]);
+                $total += $subtotal;
+            }
+
+            $order->update(['total' => $total]);
+            $order->mesa->update(['status' => \App\Enums\TableStatus::OCUPADA]);
+
+
+
+            DB::commit();
+            broadcast(new \App\Events\OrderSentToKitchen($order));
+            return redirect()->route('mesas.index')->with('success', 'Pedido creado y enviado a cocina.');
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return back()->with('error', 'Error: ' . $e->getMessage());
+        }
+    }
+
 }

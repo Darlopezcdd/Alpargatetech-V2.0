@@ -13,7 +13,7 @@ export default defineConfig({
     server: {
         host: '0.0.0.0',
         hmr: {
-            host: '172.20.131.209', // Tu IP local para que el celular sepa dónde buscar cambios
+            host: 'host=192.168.1.16', // Tu IP local para que el celular sepa dónde buscar cambios
         },
     },
 });
