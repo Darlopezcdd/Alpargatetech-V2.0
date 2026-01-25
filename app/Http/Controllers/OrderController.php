@@ -33,7 +33,7 @@ class OrderController extends Controller
             $subtotal = $product->price * $request->quantity;
 
             // Si esto falla, el total no se incrementa
-            $order->items()->create([
+            $newItem = $order->items()->create([
                 'product_id' => $product->id,
                 'quantity' => $request->quantity,
                 'subtotal' => $subtotal,
@@ -42,7 +42,15 @@ class OrderController extends Controller
 
             $order->increment('total', $subtotal);
 
+            // Cargar relación para el evento
+            $newItem->load('product');
+
             DB::commit();
+
+            // Broadcastear SOLO el item nuevo
+            // Pasamos una colección con UN solo item
+            broadcast(new OrderSentToKitchen($order, collect([$newItem])));
+
             return back()->with('success', 'Producto añadido y total actualizado.');
         } catch (\Exception $e) {
             DB::rollBack();
@@ -144,7 +152,7 @@ class OrderController extends Controller
 
         return redirect()->route('mesas.index')->with('success', 'Pago procesado. <a href="' . route('orders.download-invoice', $order->id) . '" target="_blank" class="inline-block px-3 py-1 bg-yellow-500 text-white font-bold rounded hover:bg-yellow-600 transition-colors ml-2 no-underline">Descargar Nota de Venta</a>');
     }
-//    public function RollbackMal(Request $request)
+    //    public function RollbackMal(Request $request)
 //    {
 //        // 1. Validar que la petición sea completa (Evita el error de null)
 //        $request->validate([

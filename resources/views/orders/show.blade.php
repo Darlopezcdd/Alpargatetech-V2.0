@@ -15,7 +15,8 @@
                                     @csrf
                                     <input type="hidden" name="product_id" value="{{ $product->id }}">
                                     <input type="number" name="quantity" value="1" min="1" style="width: 40px;">
-                                    <button type="submit" style="background: #007bff; color: white; border: none; padding: 5px;">+</button>
+                                    <button type="submit"
+                                        style="background: #007bff; color: white; border: none; padding: 5px;">+</button>
                                 </form>
                             </div>
                         @endforeach
@@ -50,18 +51,30 @@
                     </select>
 
                     <button type="submit"
-                            style="width: 100%; padding: 10px; background: #28a745; color: white; border: none; font-weight: bold; cursor: pointer;"
-                            onclick="return confirm('¿Confirmar pago y liberar mesa?')">
+                        style="width: 100%; padding: 10px; background: #28a745; color: white; border: none; font-weight: bold; cursor: pointer;"
+                        onclick="return confirm('¿Confirmar pago y liberar mesa?')">
                         REGISTRAR PAGO Y LIBERAR MESA
                     </button>
                 </form>
             </div>
-            <form action="{{ route('orders.send-to-kitchen', $order->id) }}" method="POST">
-                @csrf
-                <button type="submit" style="width: 100%; padding: 15px; background: #ffc107; font-weight: bold; border: none; cursor: pointer;">
-                    ENVIAR A COCINA
-                </button>
-            </form>
+            @if($order->status === \App\Enums\OrderStatus::ANOTADO)
+                <form action="{{ route('orders.send-to-kitchen', $order->id) }}" method="POST">
+                    @csrf
+                    <button type="submit"
+                        style="width: 100%; padding: 15px; background: #ffc107; font-weight: bold; border: none; cursor: pointer;">
+                        ENVIAR A COCINA
+                    </button>
+                    <p style="font-size: 0.8em; color: #666; text-align: center; margin-top: 5px;">(Envía todo el pedido por
+                        primera vez)</p>
+                </form>
+            @else
+                <div
+                    style="padding: 15px; background: #e2e3e5; text-align: center; font-weight: bold; color: #383d41; border: 1px solid #d6d8db;">
+                    PEDIDO EN COCINA
+                    <p style="font-size: 0.8em; font-weight: normal; margin: 0;">Los productos nuevos se envían automáticamente
+                        al añadir.</p>
+                </div>
+            @endif
         </div>
     </div>
     @if ($errors->any())
