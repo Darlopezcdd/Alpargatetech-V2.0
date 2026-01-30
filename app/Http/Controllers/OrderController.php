@@ -105,6 +105,8 @@ class OrderController extends Controller
             'status' => $request->status
         ]);
 
+        broadcast(new \App\Events\TableStatusUpdated($order->table_id, $request->status, $order->id));
+
         return back()->with('success', 'Estado del pedido #' . $order->id . ' actualizado.');
     }
     public function downloadInvoice(Order $order)
