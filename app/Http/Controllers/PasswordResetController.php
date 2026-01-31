@@ -9,6 +9,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
+use Illuminate\Validation\Rules\Password;
 
 class PasswordResetController extends Controller
 {
@@ -76,7 +77,7 @@ class PasswordResetController extends Controller
         $request->validate([
             'email' => 'required|email|exists:users,email',
             'code' => 'required',
-            'password' => 'required|min:8|confirmed',
+            'password' => ['required', 'confirmed', Password::min(8)->mixedCase()->symbols()],
         ]);
 
         // Verificar código nuevamente por seguridad

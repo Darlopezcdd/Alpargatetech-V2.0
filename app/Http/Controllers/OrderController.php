@@ -12,6 +12,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use App\Models\Payment;
 use App\Events\OrderSentToKitchen;
+use App\Events\OrderReadyToServe;
 class OrderController extends Controller
 {
 
@@ -105,6 +106,15 @@ class OrderController extends Controller
             'status' => $request->status
         ]);
 
+        // Broadcast a la cocina/meseros que el pedido cambió de estado
+        // Usamos OrderReadyToServe como evento genérico de actualización de pedido listo/progreso
+        // Esto permite que el panel inferior se actualice con la data del pedido (mesa, items, etc)
+        if (in_array($request->status, [OrderStatus::EN_PREPARACION->value, OrderStatus::LISTO->value, 'En Preparación', 'Listo'])) {
+            $order->load(['mesa', 'items.product']);
+            broadcast(new OrderReadyToServe($order));
+        }
+
+        // Mantenemos el evento original de tabla por si acaso
         broadcast(new \App\Events\TableStatusUpdated($order->table_id, $request->status, $order->id));
 
         return back()->with('success', 'Estado del pedido #' . $order->id . ' actualizado.');
