@@ -28,8 +28,7 @@ WORKDIR /var/www/html
 COPY composer.json composer.lock ./
 
 # 2. Instalamos SIN ejecutar scripts (esto evita el error de artisan package:discover)
-RUN composer install --no-dev --optimize-autoloader --no-scripts --no-interaction
-
+RUN COMPOSER_MEMORY_LIMIT=-1 composer install --no-dev --optimize-autoloader --no-scripts --no-interaction
 # 3. Copiamos el resto de la aplicación
 COPY . .
 
