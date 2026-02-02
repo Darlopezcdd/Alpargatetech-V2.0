@@ -6,48 +6,41 @@ RUN npm install
 COPY . .
 RUN npm run build
 
+# ... (etapa de build de node igual)
+
 FROM php:8.2-fpm
 
-# Install system dependencies
+# Instalar dependencias del sistema (Añadimos dependencias para dompdf y limpieza)
 RUN apt-get update && apt-get install -y \
-    git \
-    curl \
-    libpng-dev \
-    libonig-dev \
-    libxml2-dev \
-    zip \
-    unzip \
-    libpq-dev \
-    libzip-dev \
-    libicu-dev \
-    nginx \
-    supervisor
+    git curl libpng-dev libonig-dev libxml2-dev zip unzip \
+    libpq-dev libzip-dev libicu-dev nginx supervisor \
+    libfontconfig1 libxrender1 # Requerido por dompdf
 
-# Clear cache
-RUN apt-get clean && rm -rf /var/lib/apt/lists/*
-
-# Install PHP extensions
+# Instalar extensiones PHP
 RUN docker-php-ext-install pdo_pgsql mbstring exif pcntl bcmath gd opcache zip intl sockets
 
-# Get latest Composer
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 
-# Set working directory
 WORKDIR /var/www/html
 
-# Copy existing application directory contents
-COPY . /var/www/html
+# --- ESTRATEGIA DE INSTALACIÓN LIMPIA ---
+# 1. Copiamos solo los archivos de composer
+COPY composer.json composer.lock ./
 
-# Install PHP dependencies
-RUN composer install --optimize-autoloader --no-dev
+# 2. Instalamos SIN ejecutar scripts (esto evita el error de artisan package:discover)
+RUN composer install --no-dev --optimize-autoloader --no-scripts --no-interaction
 
-# Copy built assets from build stage
+# 3. Copiamos el resto de la aplicación
+COPY . .
+
+# 4. Copiamos los assets de Node
 COPY --from=build /app/public/build /var/www/html/public/build
-# Copy manifest.json (important for Vite)
-COPY --from=build /app/public/build /var/www/html/public/build
 
-# Create system user to run Composer and Artisan Commands
-RUN chown -R www-data:www-data /var/www/html
+# 5. Ahora que el código está, generamos el autoload real
+RUN composer dump-autoload --optimize --no-dev
+
+# Ajuste de permisos
+RUN chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache
 
 # Nginx configuration
 COPY docker/nginx/conf.d/app.conf /etc/nginx/conf.d/default.conf
