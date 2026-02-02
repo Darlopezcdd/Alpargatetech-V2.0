@@ -36,6 +36,9 @@ WORKDIR /var/www/html
 # Copy existing application directory contents
 COPY . /var/www/html
 
+# Install PHP dependencies
+RUN composer install --optimize-autoloader --no-dev
+
 # Copy built assets from build stage
 COPY --from=build /app/public/build /var/www/html/public/build
 # Copy manifest.json (important for Vite)
