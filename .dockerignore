@@ -9,3 +9,15 @@
 docker-compose.yml
 test.php
 README.md
+# ... tus líneas actuales ...
+.git
+.github
+.vscode
+.dockerignore
+Dockerfile
+node_modules
+vendor
+.env
+.env.*
+tests/
+phpunit.xml

@@ -47,12 +47,14 @@ COPY composer.json composer.lock ./
 
 # 2. Instalar dependencias SIN ejecutar scripts de Laravel ni plugins
 # Usamos COMPOSER_MEMORY_LIMIT=-1 para evitar que Render mate el proceso por falta de RAM
+# Sustituye tu comando de composer por este:
 RUN COMPOSER_MEMORY_LIMIT=-1 composer install \
     --no-dev \
-    --optimize-autoloader \
-    --no-scripts \
     --no-interaction \
-    --no-plugins
+    --no-plugins \
+    --no-scripts \
+    --prefer-dist \
+    --optimize-autoloader
 
 # 3. Ahora copiar el resto del código de la aplicación
 COPY . .
