@@ -1,0 +1,95 @@
+services:
+  # Web Application Service
+  - type: web
+    name: alpargate-tech-web
+    env: docker
+    plan: free
+    healthCheckPath: /up
+    envVars:
+      - key: APP_NAME
+        value: AlpargateTech
+      - key: APP_ENV
+        value: production
+      - key: APP_DEBUG
+        value: false
+      - key: APP_KEY
+        sync: false
+      - key: APP_URL
+        sync: false
+      - key: DB_CONNECTION
+        value: pgsql
+      - key: DB_HOST
+        sync: false
+      - key: DB_PORT
+        value: 5432
+      - key: DB_DATABASE
+        sync: false
+      - key: DB_USERNAME
+        sync: false
+      - key: DB_PASSWORD
+        sync: false
+      - key: REDIS_HOST
+        fromService:
+          type: redis
+          name: alpargate-tech-redis
+          property: host
+      - key: REDIS_PORT
+        fromService:
+          type: redis
+          name: alpargate-tech-redis
+          property: port
+      - key: CACHE_PREFIX
+        value: alpargate_cache_
+      - key: CACHE_STORE
+        value: redis
+      - key: SESSION_DRIVER
+        value: redis
+      - key: QUEUE_CONNECTION
+        value: redis
+      - key: REVERB_APP_ID
+        sync: false
+      - key: REVERB_APP_KEY
+        sync: false
+      - key: REVERB_APP_SECRET
+        sync: false
+      - key: REVERB_HOST
+        sync: false
+      - key: REVERB_PORT
+        value: 443
+      - key: REVERB_SCHEME
+        value: https
+
+  # Reverb WebSocket Server
+  - type: web
+    name: alpargate-tech-reverb
+    env: docker
+    plan: free
+    # Override default command to run Reverb
+    dockerCommand: php artisan reverb:start --host="0.0.0.0" --port=$PORT
+    envVars:
+      - key: APP_KEY
+        sync: false
+      - key: REVERB_APP_ID
+        sync: false
+      - key: REVERB_APP_KEY
+        sync: false
+      - key: REVERB_APP_SECRET
+        sync: false
+      - key: REDIS_HOST
+        fromService:
+          type: redis
+          name: alpargate-tech-redis
+          property: host
+      - key: REDIS_PORT
+        fromService:
+          type: redis
+          name: alpargate-tech-redis
+          property: port
+      - key: CACHE_STORE
+        value: redis
+
+  # Redis Service (Managed)
+  - type: redis
+    name: alpargate-tech-redis
+    plan: free
+    ipAllowList: [] # Internal access only
