@@ -1,11 +1,10 @@
-# --- ETAPA 1: Build de Assets (Node) ---
-FROM node:20 AS build
-
-WORKDIR /app
-COPY package*.json ./
-RUN npm install
-COPY . .
-RUN npm run build
+# --- ETAPA 1: Skipped (Using Local Assets) ---
+# FROM node:20 AS build
+# WORKDIR /app
+# COPY package*.json ./
+# RUN npm install
+# COPY . .
+# RUN npm run build
 
 # --- ETAPA 2: Runtime de PHP ---
 FROM php:8.2-fpm
@@ -59,9 +58,9 @@ RUN COMPOSER_MEMORY_LIMIT=-1 composer install \
 # 3. Ahora copiar el resto del código de la aplicación
 COPY . .
 
-# 4. Copiar los assets compilados desde la etapa 'build'
-# Asegúrate de que la carpeta de destino coincida con lo que espera Laravel
-COPY --from=build /app/public/build /var/www/html/public/build
+# 4. Copiar los assets COMPILADOS LOCALMENTE (ya no desde 'build')
+# Asegúrate de que la carpeta public/build exista en tu repo y no esté en .gitignore
+COPY public/build /var/www/html/public/build
 
 # 5. Generar el autoload final ahora que ya existe el código (sin ejecutar scripts pesados)
 RUN composer dump-autoload --optimize --no-dev
