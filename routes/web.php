@@ -8,6 +8,11 @@ Route::get('/', function () {
     return view('welcome');
 });
 
+// DEBUG: Route to catch WebSocket requests that aren't proxied by Nginx
+Route::any('/app/{any}', function ($any) {
+    return "DEBUG: HIT LARAVEL ROUTER for /app/" . $any;
+})->where('any', '.*');
+
 // Rutas de Autenticación (RF-01)
 Route::get('/login', [LoginController::class, 'showLoginForm'])->name('login');
 Route::post('/login', [LoginController::class, 'login']);
