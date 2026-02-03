@@ -66,35 +66,45 @@
         @push('scripts')
             <script>
                 window.addEventListener('load', function () {
-                    // Auto-Reload Strategy
-                    const RELOAD_INTERVAL = 5000; // 5 seconds
-                    let timeLeft = RELOAD_INTERVAL / 1000;
+                    const POLL_INTERVAL = 5000; // 5 seconds
 
-                    // Create Timer UI
-                    const timerDiv = document.createElement('div');
-                    timerDiv.style.padding = '10px';
-                    timerDiv.style.marginBottom = '20px';
-                    timerDiv.style.background = '#e9ecef';
-                    timerDiv.style.border = '1px solid #ced4da';
-                    timerDiv.style.borderRadius = '5px';
-                    timerDiv.style.textAlign = 'center';
-                    timerDiv.innerHTML = `Actualizando en <strong>${timeLeft}</strong> segundos...`;
+                    // Visual Feedback (Subtle)
+                    const debugDiv = document.createElement('div');
+                    debugDiv.style.position = 'fixed';
+                    debugDiv.style.bottom = '10px';
+                    debugDiv.style.right = '10px';
+                    debugDiv.style.fontSize = '12px';
+                    debugDiv.style.color = '#ccc';
+                    debugDiv.innerText = 'Sync: OK';
+                    document.body.appendChild(debugDiv);
 
-                    const container = document.querySelector('.container');
-                    if (container) {
-                        container.insertBefore(timerDiv, container.firstChild);
-                    }
-
-                    // Countdown
                     setInterval(() => {
-                        timeLeft--;
-                        if (timeLeft <= 0) {
-                            timerDiv.innerHTML = '<strong>¡Actualizando ahora!</strong> ↻';
-                            window.location.reload();
-                        } else {
-                            timerDiv.innerHTML = `Actualizando en <strong>${timeLeft}</strong> segundos...`;
-                        }
-                    }, 1000);
+                        debugDiv.innerText = 'Sync: ...';
+
+                        fetch(window.location.href)
+                            .then(response => response.text())
+                            .then(html => {
+                                const parser = new DOMParser();
+                                const doc = parser.parseFromString(html, 'text/html');
+
+                                const newContainer = doc.getElementById('kitchen-orders');
+                                const currentContainer = document.getElementById('kitchen-orders');
+
+                                if (newContainer && currentContainer) {
+                                    // Comparamos el contenido HTML
+                                    if (newContainer.innerHTML !== currentContainer.innerHTML) {
+                                        currentContainer.innerHTML = newContainer.innerHTML;
+                                        // Opcional: Sonido de "ping" si hay más pedidos (heurística simple)
+                                        // new Audio('/sounds/ping.mp3').play().catch(e => {});
+                                    }
+                                }
+                                debugDiv.innerText = 'Sync: OK';
+                            })
+                            .catch(err => {
+                                console.error('Polling error:', err);
+                                debugDiv.innerText = 'Sync: Error';
+                            });
+                    }, POLL_INTERVAL);
                 });
             </script>
         @endpush
