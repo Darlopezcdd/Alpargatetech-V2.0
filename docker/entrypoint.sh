@@ -13,12 +13,10 @@ php artisan view:cache
 # echo "Running migrations..."
 # php artisan migrate --force
 
-# Execute the command passed to the container, or default to starting Nginx/PHP
+# Execute the command passed to the container, or default to starting Supervisor
 if [ $# -gt 0 ]; then
     exec "$@"
 else
-    # Start PHP-FPM in the background
-    php-fpm -D
-    # Start Nginx in the foreground
-    nginx
+    # Start Supervisor (which manages Nginx, PHP-FPM, and Reverb)
+    exec /usr/bin/supervisord -n -c /etc/supervisor/conf.d/supervisord.conf
 fi

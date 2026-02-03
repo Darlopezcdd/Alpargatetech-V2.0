@@ -76,6 +76,10 @@ RUN chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cac
 COPY docker/nginx/conf.d/app.conf /etc/nginx/conf.d/default.conf
 RUN echo "daemon off;" >> /etc/nginx/nginx.conf
 
+# Configuración de Supervisor
+COPY docker/supervisord.conf /etc/supervisor/conf.d/supervisord.conf
+
+
 # Configuración del Entrypoint
 COPY docker/entrypoint.sh /usr/local/bin/entrypoint.sh
 RUN chmod +x /usr/local/bin/entrypoint.sh
