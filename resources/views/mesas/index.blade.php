@@ -6,7 +6,7 @@
 
 
 
-        <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 20px;">
+        <div id="mesas-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 20px;">
             @foreach($mesas as $mesa)
                 <div id="mesa-card-{{ $mesa->id }}" style="
                                                                 border: 2px solid #333;
@@ -105,162 +105,55 @@
     @push('scripts')
         <script>
             window.addEventListener('load', function () {
-                if (typeof Echo === 'undefined') {
-                    console.error('Echo no está definido.');
-                    return;
-                }
+                const POLL_INTERVAL = 5000; // 5 segundos
 
-                console.log('Suscribiendo a canal tables...');
-                Echo.channel('tables')
-                    .listen('.table.status.updated', (e) => {
-                        console.log('Evento TableStatusUpdated:', e);
-                        const mesaId = e.tableId;
-                        const status = e.status; // 'En Preparación', 'Listo', 'Servido'
+                // Timer visual (opcional, para feedback)
+                const debugDiv = document.createElement('div');
+                debugDiv.style.position = 'fixed';
+                debugDiv.style.bottom = '10px';
+                debugDiv.style.right = '10px';
+                debugDiv.style.fontSize = '10px';
+                debugDiv.style.color = '#ccc';
+                debugDiv.innerText = 'Sync: OK';
+                document.body.appendChild(debugDiv);
 
-                        // Lógica del mapa de mesas
-                        const statusContainer = document.getElementById(`status-container-${mesaId}`);
-                        if (statusContainer) {
-                            if (status === 'Servido') {
-                                statusContainer.innerHTML = '<strong style="color: #d97706; font-size: 1.1em; display: block; margin-top: 5px;">PENDIENTE PAGO</strong>';
-                                // Opcional: Sonido diferente o mismo
-                            } else {
-                                // Para 'Listo' o 'En Preparación', mostramos estado normal o específico si se quiere
-                                statusContainer.innerHTML = '<strong>' + (status === 'En Preparación' ? 'En Preparación' : 'Ocupada') + '</strong>';
+                setInterval(() => {
+                    debugDiv.innerText = 'Sync: Actualizando...';
+                    
+                    fetch(window.location.href)
+                        .then(response => response.text())
+                        .then(html => {
+                            const parser = new DOMParser();
+                            const doc = parser.parseFromString(html, 'text/html');
+
+                            // 1. Actualizar Panel de Pedidos Activos (lo que pidió el usuario)
+                            const newPanel = doc.getElementById('active-orders-panel');
+                            const currentPanel = document.getElementById('active-orders-panel');
+                            if (newPanel && currentPanel) {
+                                // Solo actualizamos si hay cambios reales para evitar parpadeos innecesarios
+                                if (newPanel.innerHTML !== currentPanel.innerHTML) {
+                                    currentPanel.innerHTML = newPanel.innerHTML;
+                                    // Reproducir sonido si la longitud cambió (posible nuevo pedido)
+                                    // o una heurística simple
+                                }
                             }
-                        }
 
-                        // Si el status pasa a Servido, quitar de la lista de listos (si está)
-                        if (status === 'Servido' && e.orderId) {
-                            const readyCard = document.getElementById(`ready-order-${e.orderId}`);
-                            if (readyCard) readyCard.remove();
-                        }
+                            // 2. Actualizar Grid de Mesas (para ver si cambiaron de estado)
+                            const newGrid = doc.getElementById('mesas-grid');
+                            const currentGrid = document.getElementById('mesas-grid');
+                            if (newGrid && currentGrid) {
+                                if (newGrid.innerHTML !== currentGrid.innerHTML) {
+                                    currentGrid.innerHTML = newGrid.innerHTML;
+                                }
+                            }
 
-                        // Animación tarjeta mesa
-                        const card = document.getElementById(`mesa-card-${mesaId}`);
-                        if (card) {
-                            card.style.transform = 'scale(1.05)';
-                            setTimeout(() => card.style.transform = 'scale(1)', 300);
-                        }
-                    });
-
-                // Nuevo Canal para Pedidos Listos
-                console.log('Suscribiendo a canal ready-orders...');
-                Echo.channel('ready-orders')
-                    .listen('.order.ready', (e) => {
-                        // REFACTOR: Usaremos un manejador unificado para actualizar el panel
-                        updateReadyOrdersPanel(e.order);
-                    });
-
-                // Escuchar cambios de estado generales para actualizar el panel
-                Echo.channel('tables')
-                    .listen('.table.status.updated', (e) => {
-                        // Si es un cambio de estado de pedido, podríamos necesitar refrescar el panel.
-                        // El evento TableStatusUpdated trae: tableId, status, orderId.
-                        // Sin embargo, NO trae la info completa del pedido (items, etc).
-                        // Por eso lo ideal es que el backend mande el evento con datos del pedido.
-                        // Asumiremos que OrderReadyToServe (o equivalente) se manda para CADA cambio importante
-                        // Por ahora, si recibimos esto y el pedido ya está en el panel, lo actualizamos visualmente.
-
-                        updatePanelCardStatus(e.orderId, e.status);
-                    });
-
-                // Escuchar nuevos pedidos (canal cocina) para agregarlos al panel como "En Cocina"
-                Echo.channel('kitchen-channel')
-                    .listen('.new-order', (e) => {
-                        console.log('Nuevo pedido en cocina, agregando al panel:', e.order);
-                        addOrUpdatePanelOrder(e.order);
-                    });
-
-                function addOrUpdatePanelOrder(order) {
-                    const container = document.getElementById('active-orders-container');
-                    if (!container) return;
-
-                    // Verificar si ya existe
-                    let card = document.getElementById(`active-order-${order.id}`);
-
-                    // Definir colores y textos según estado
-                    let bgColor = '#0d6efd'; // Azul (En Cocina)
-                    let btnHtml = '';
-                    let statusText = order.status;
-
-                    if (order.status === 'En Preparación') {
-                        bgColor = '#ffc107'; // Amarillo
-                    } else if (order.status === 'Listo') {
-                        bgColor = '#28a745'; // Verde
-                        btnHtml = `
-                                     <form action="/orders/${order.id}/status" method="POST">
-                                        <input type="hidden" name="_token" value="${document.querySelector('meta[name="csrf-token"]').getAttribute('content')}">
-                                        <input type="hidden" name="status" value="Servido">
-                                        <button type="submit" style="background: white; color: #28a745; border: none; padding: 5px 10px; font-weight: bold; border-radius: 4px; cursor: pointer; width: 100%;">
-                                            ENTREGAR / SERVIR
-                                        </button>
-                                    </form>
-                                `;
-                    }
-
-                    // Si ya existe, actualizamos
-                    if (card) {
-                        card.style.background = bgColor;
-                        // Actualizar botón si cambia a Listo
-                        const formContainer = card.querySelector('.action-form-container');
-                        if (formContainer) formContainer.innerHTML = btnHtml;
-                        return;
-                    }
-
-                    // Si no existe, crear
-                    // Nota: Para "En Cocina" order.mesa puede venir como objeto.
-                    const mesaNum = order.mesa ? order.mesa.number : '?';
-
-                    const html = `
-                                <div id="active-order-${order.id}" style="background: ${bgColor}; color: white; padding: 10px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.2); min-width: 250px; flex-shrink: 0; transition: background 0.3s;">
-                                    <h5 style="margin: 0 0 5px 0; font-size: 1.1em;">Pedido #${order.id} - Mesa ${mesaNum}</h5>
-                                    <p style="margin: 0 0 5px 0;"><strong>Estado: <span class="status-text">${statusText}</span></strong></p>
-                                    <div class="action-form-container">
-                                        ${btnHtml}
-                                    </div>
-                                </div>
-                            `;
-                    container.insertAdjacentHTML('beforeend', html);
-                }
-
-                function updatePanelCardStatus(orderId, status) {
-                    const card = document.getElementById(`active-order-${orderId}`);
-                    if (!card) return;
-
-                    // Normalizar status
-                    console.log('Actualizando tarjeta panel:', orderId, status);
-
-                    if (status === 'En Preparación') {
-                        card.style.background = '#ffc107';
-                    } else if (status === 'Listo') {
-                        card.style.background = '#28a745';
-                        // Agregar botón dinámicamente si no existe ya
-                        const formContainer = card.querySelector('.action-form-container');
-                        // Verificamos si ya hay botón para no duplicar/romper, aunque innerHTML reemplaza
-                        if (formContainer) {
-                            formContainer.innerHTML = `
-                                        <form action="/orders/${orderId}/status" method="POST">
-                                            <input type="hidden" name="_token" value="${document.querySelector('meta[name="csrf-token"]').getAttribute('content')}">
-                                            <input type="hidden" name="status" value="Servido">
-                                            <button type="submit" style="background: white; color: #28a745; border: none; padding: 5px 10px; font-weight: bold; border-radius: 4px; cursor: pointer; width: 100%;">
-                                                ENTREGAR / SERVIR
-                                            </button>
-                                        </form>
-                                      `;
-                        }
-                        new Audio('/sounds/ping.mp3').play().catch(e => { });
-                    } else if (status === 'Servido') {
-                        card.remove();
-                    }
-
-                    const statusText = card.querySelector('.status-text');
-                    if (statusText) statusText.innerText = status;
-                }
-
-                function updateReadyOrdersPanel(order) {
-                    addOrUpdatePanelOrder(order);
-                    new Audio('/sounds/ping.mp3').play().catch(e => { });
-                }
+                            debugDiv.innerText = 'Sync: OK';
+                        })
+                        .catch(err => {
+                            console.error('Polling error:', err);
+                            debugDiv.innerText = 'Sync: Error';
+                        });
+                }, POLL_INTERVAL);
             });
         </script>
     @endpush
