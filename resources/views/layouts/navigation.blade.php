@@ -7,21 +7,31 @@
     ];
 @endphp
 
-@foreach($navLinks as $link)
-    @php
-        // Verificar si el usuario tiene rol para ver este enlace
-        $hasRole = in_array(Auth::user()->role->value, $link['roles']);
-        $isActive = request()->routeIs($link['route']);
-    @endphp
+<div class="space-y-1">
+    @foreach($navLinks as $link)
+        @php
+            // Lógica intacta
+            $hasRole = in_array(Auth::user()->role->value, $link['roles']);
+            $isActive = request()->routeIs($link['route']);
+        @endphp
 
-    @if($hasRole)
-        <a href="{{ route($link['route']) }}"
-            class="{{ $isActive ? 'bg-slate-800 text-white' : 'text-slate-300 hover:bg-slate-700 hover:text-white' }} group flex items-center px-2 py-2 text-base font-medium rounded-md mb-1">
-            <svg class="{{ $isActive ? 'text-white' : 'text-slate-400 group-hover:text-slate-300' }} mr-4 flex-shrink-0 h-6 w-6"
-                xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="{{ $link['icon'] }}" />
-            </svg>
-            {{ $link['label'] }}
-        </a>
-    @endif
-@endforeach
+        @if($hasRole)
+            <a href="{{ route($link['route']) }}"
+               class="{{ $isActive 
+                   ? 'bg-white/5 text-brand-gold border-brand-gold shadow-[inset_10px_0_20px_-10px_rgba(217,191,162,0.1)]' 
+                   : 'text-gray-400 hover:text-brand-white hover:bg-white/5 border-transparent' 
+               }} group flex items-center px-4 py-3 text-sm font-medium border-l-4 transition-all duration-300 mb-1">
+                
+                <svg class="{{ $isActive 
+                       ? 'text-brand-gold' 
+                       : 'text-gray-500 group-hover:text-brand-gold transition-colors duration-300' 
+                   }} mr-3 flex-shrink-0 h-5 w-5"
+                   xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="{{ $link['icon'] }}" />
+                </svg>
+                
+                <span class="tracking-wide">{{ $link['label'] }}</span>
+            </a>
+        @endif
+    @endforeach
+</div>
