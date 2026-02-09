@@ -172,7 +172,7 @@
                     </a>
                     
                     <a href="https://drive.google.com/file/d/1R0QdZygLOxyU_ZYiYkxpdkLnYHF4uVKk/view?usp=sharing" target="_blank" class="w-full md:w-auto px-10 py-4 bg-white/10 backdrop-blur-md border border-white/30 text-white font-bold rounded-full hover:bg-white hover:text-brand-dark transition-all duration-300 transform hover:scale-105 shadow-xl">
-                        Ver Menú Computo
+                        Ver Menú Completo
                     </a>
                 </div>
             </div>
