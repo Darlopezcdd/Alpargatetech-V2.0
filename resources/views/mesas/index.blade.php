@@ -1,265 +1,432 @@
-@extends('layouts.app') {{-- O el layout que estés usando --}}
+@extends('layouts.app')
 
 @section('content')
-    <div class="container">
-        <h1>Mapa de Mesas - La Casa de Alfonso</h1>
+    <div class="container mx-auto px-4 pb-80">
+        
+        <div class="mb-8 border-b border-brand-gold/20 pb-4 flex flex-col xl:flex-row xl:items-end xl:justify-between gap-6">
+            <div class="text-center xl:text-left">
+                <h1 class="text-3xl font-bold font-serif text-brand-dark">Mapa de Mesas</h1>
+                <p class="mt-2 text-brand-gray text-sm">Gestiona el estado de las mesas y los pedidos en tiempo real.</p>
+            </div>
 
+            <div class="flex flex-wrap justify-center xl:justify-end gap-4">
+                <div class="bg-white rounded-xl shadow-sm border border-gray-100 px-5 py-3 flex items-center gap-4">
+                    <div class="p-2 bg-brand-gold/10 rounded-lg text-brand-gold">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                    </div>
+                    <div class="text-right">
+                        <p class="text-[10px] font-bold text-gray-400 uppercase tracking-widest">FECHA</p>
+                        <p class="text-sm font-bold text-brand-dark uppercase whitespace-nowrap">
+                            {{ now()->setTimezone('America/Guayaquil')->locale('es')->isoFormat('dddd, D [de] MMMM [de] YYYY') }}
+                        </p>
+                    </div>
+                </div>
 
+                <div class="bg-white rounded-xl shadow-sm border border-gray-100 px-5 py-3 flex items-center gap-4">
+                    <div class="p-2 bg-gray-100 rounded-lg text-gray-500">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                    </div>
+                    <div class="text-right">
+                        <p class="text-[10px] font-bold text-gray-400 uppercase tracking-widest">HORA</p>
+                        <p id="live-clock" class="text-2xl font-serif font-bold text-brand-dark w-[110px] leading-none">
+                            {{ now()->setTimezone('America/Guayaquil')->format('h:i A') }}
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
 
-        <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 20px;">
+        <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-6">
             @foreach($mesas as $mesa)
-                <div id="mesa-card-{{ $mesa->id }}" style="
-                                                                border: 2px solid #333;
-                                                                padding: 20px;
-                                                                text-align: center;
-                                                                border-radius: 10px;
-                                                                background-color: {{ $mesa->status->value === 'Libre' ? '#d4edda' : '#f8d7da' }};
-                                                                color: {{ $mesa->status->value === 'Libre' ? '#155724' : '#721c24' }};
-                                                                transition: all 0.3s ease;
-                                                            ">
-                    <h3>Mesa {{ $mesa->number }}</h3>
-                    <p>Capacidad: {{ $mesa->capacity }}</p>
+                @php
+                    $isFree = $mesa->status->value === 'Libre';
+                    $hasActiveOrder = $mesa->status->value === 'Ocupada' && $mesa->currentOrder;
+                    $isPendingPay = $hasActiveOrder && $mesa->currentOrder->status == \App\Enums\OrderStatus::SERVIDO;
+                    
+                    $cardClasses = $isFree 
+                        ? 'bg-green-50 border-green-200 hover:shadow-green-100' 
+                        : ($isPendingPay ? 'bg-amber-50 border-amber-300 ring-2 ring-amber-400 ring-offset-2' : 'bg-red-50 border-red-200');
+                    
+                    $textClass = $isFree ? 'text-green-800' : ($isPendingPay ? 'text-amber-800' : 'text-red-800');
+                @endphp
 
-                    <div id="status-container-{{ $mesa->id }}">
-                        @if($mesa->status->value === 'Ocupada' && $mesa->currentOrder && $mesa->currentOrder->status == \App\Enums\OrderStatus::SERVIDO)
-                            <strong style="color: #d97706; font-size: 1.1em; display: block; margin-top: 5px;">PENDIENTE
-                                PAGO</strong>
-                            <!-- Status visual para meseros -->
-                        @else
-                            <strong>{{ $mesa->status->value }}</strong>
-                        @endif
+                <div id="mesa-card-{{ $mesa->id }}" 
+                     class="relative p-5 rounded-2xl border-2 shadow-sm hover:shadow-md transition-all duration-300 transform hover:-translate-y-1 {{ $cardClasses }} flex flex-col justify-between min-h-[180px] group overflow-hidden">
+                    
+                    <div class="absolute top-4 right-4 opacity-10 group-hover:opacity-25 group-hover:scale-110 group-hover:rotate-0 transition-all duration-500 ease-in-out">
+                        <svg class="w-20 h-20 {{ $textClass }}" fill="currentColor" viewBox="0 0 24 24">
+                            <rect x="7" y="7" width="10" height="10" rx="1.5" />
+                            <path d="M10 3h4v3h-4zm0 15h4v3h-4zM3 10v4h3v-4zm15 0v4h3v-4z" />
+                        </svg>
                     </div>
 
-                    <div style="margin-top: 15px;">
-                        @if($mesa->status->value === 'Libre')
-                            <a href="{{ route('orders.create', ['table_id' => $mesa->id]) }}"
-                                style="background: #28a745; color: white; padding: 8px; text-decoration: none; border-radius: 5px;">
+                    <div class="text-center mt-4 relative z-10">
+                        <h3 class="text-2xl font-bold font-serif {{ $textClass }}">Mesa {{ $mesa->number }}</h3>
+                        
+                        <div class="flex items-center justify-center gap-1 mt-1 opacity-70 {{ $textClass }}">
+                            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
+                            <span class="text-xs font-medium">{{ $mesa->capacity }} pax</span>
+                        </div>
+                    </div>
+
+                    <div class="mt-4 text-center z-10">
+                        <div id="status-container-{{ $mesa->id }}" class="mb-3">
+                            @if($isPendingPay)
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-amber-200 text-amber-900 animate-pulse">
+                                    PENDIENTE PAGO
+                                </span>
+                            @else
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold {{ $isFree ? 'bg-green-200 text-green-900' : 'bg-red-200 text-red-900' }}">
+                                    {{ $mesa->status->value }}
+                                </span>
+                            @endif
+                        </div>
+
+                        @if($isFree)
+                            <a href="{{ route('orders.create', ['table_id' => $mesa->id]) }}" 
+                               class="inline-block w-full px-4 py-2 bg-green-600 hover:bg-green-700 text-white text-sm font-bold rounded-lg shadow transition-colors">
                                 Abrir Pedido
                             </a>
+                        @elseif($mesa->currentOrder)
+                            <a href="{{ route('orders.show', $mesa->currentOrder->id) }}" 
+                               class="inline-block w-full px-4 py-2 bg-brand-dark hover:bg-black text-brand-gold text-sm font-bold rounded-lg shadow transition-colors border border-brand-gold/30">
+                                Ver Detalle
+                            </a>
                         @else
-                            @if($mesa->currentOrder)
-                                <a href="{{ route('orders.show', $mesa->currentOrder->id) }}"
-                                    style="background: #007bff; color: white; padding: 8px; text-decoration: none; border-radius: 5px; display: inline-block; margin-top: 5px;">
-                                    Ver Detalle
-                                </a>
-                            @else
-                                <span style="color: gray; font-size: 0.8em;">Sin pedido activo</span>
-                            @endif
+                            <span class="text-xs text-gray-400 italic">Sin pedido activo</span>
                         @endif
                     </div>
                 </div>
-
             @endforeach
         </div>
     </div>
-    </div>
 
-    {{-- Panel inferior fijo para TODOS los Pedidos Activos --}}
-    <div id="active-orders-panel" style="
-                position: fixed; 
-                bottom: 0; 
-                left: 250px; /* Asumiendo ancho de sidebar */
-                right: 0; 
-                background: #fff; 
-                border-top: 3px solid #6c757d; 
-                padding: 15px; 
-                box-shadow: 0 -2px 10px rgba(0,0,0,0.1); 
-                z-index: 999;
-                max-height: 250px;
-                overflow-y: auto;">
-        <h4 style="margin: 0 0 10px 0; color: #333;">Pedidos en Curso</h4>
-        <div id="active-orders-container" style="display: flex; gap: 15px; overflow-x: auto; padding-bottom: 5px;">
+    <div id="active-orders-panel" 
+         class="fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-md border-t-4 border-brand-gold shadow-[0_-4px_20px_rgba(0,0,0,0.1)] z-50 transition-all duration-300 ease-in-out h-80 flex flex-col overflow-hidden"
+         :class="desktopOpen ? 'lg:left-64' : 'lg:left-0'">
+        
+        <div class="h-12 min-h-[3rem] px-6 bg-brand-dark text-brand-gold flex justify-between items-center cursor-pointer hover:bg-black transition-colors z-50 relative" 
+             onclick="toggleOrdersPanel()">
+            <h4 class="font-bold font-serif text-sm uppercase tracking-widest flex items-center gap-2 select-none">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path></svg>
+                Pedidos en Curso
+                <span id="orders-count" class="bg-brand-red text-white text-[10px] px-1.5 py-0.5 rounded-full ml-1">{{ $activeOrders->count() }}</span>
+            </h4>
+            <div class="flex items-center gap-2 text-xs opacity-70">
+                <span id="panel-text-hint">Ocultar</span>
+                <svg id="panel-chevron" class="w-5 h-5 transform transition-transform duration-500 rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                </svg>
+            </div>
+        </div>
+
+        <div id="active-orders-container" class="flex-1 flex gap-4 p-4 overflow-x-auto scrollbar-thin scrollbar-thumb-brand-gold scrollbar-track-gray-100">
             @foreach($activeOrders as $order)
                 @php
-                    $bgColor = '#0d6efd'; // Azul default (En Cocina / Anotado)
-                    if ($order->status->value === 'En Preparación')
-                        $bgColor = '#ffc107';
-                    if ($order->status->value === 'Listo')
-                        $bgColor = '#28a745';
-                @endphp
-                <div id="active-order-{{ $order->id }}"
-                    style="background: {{ $bgColor }}; color: white; padding: 10px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.2); min-width: 250px; flex-shrink: 0;">
-                    <h5 style="margin: 0 0 5px 0; font-size: 1.1em;">Pedido #{{ $order->id }} - Mesa
-                        {{ $order->mesa ? $order->mesa->number : '?' }}</h5>
-                    <p style="margin: 0 0 5px 0;"><strong>Estado: <span
-                                class="status-text">{{ $order->status->value }}</span></strong></p>
+                    $bgColor = 'bg-white border-gray-200';
+                    $progressWidth = '33%';
+                    $progressColor = 'bg-gray-400';
+                    $statusTextClass = 'text-gray-500';
+                    $actionHtml = ''; 
 
-                    <div class="action-form-container">
-                        @if($order->status->value === 'Listo')
-                            <form action="{{ route('orders.update-status', $order->id) }}" method="POST">
+                    if ($order->status->value === 'En Preparación') {
+                        $progressWidth = '66%';
+                        $progressColor = 'bg-amber-500';
+                        $statusTextClass = 'text-amber-600';
+                    } else if ($order->status->value === 'Listo') {
+                        $progressWidth = '100%';
+                        $progressColor = 'bg-green-500';
+                        $statusTextClass = 'text-green-600';
+                        $actionHtml = 'LISTO';
+                    }
+                @endphp
+                <div id="active-order-{{ $order->id }}" class="{{ $bgColor }} border-2 rounded-2xl shadow-sm min-w-[280px] w-[280px] flex-shrink-0 flex flex-col justify-between p-5 transition-all duration-300 hover:shadow-md hover:border-brand-gold/30 group bg-white">
+                    
+                    <div class="flex justify-between items-center mb-4">
+                        <div class="flex items-baseline gap-1">
+                            <span class="text-sm font-bold text-gray-400">#</span>
+                            <span class="text-2xl font-serif font-bold text-brand-dark">{{ $order->id }}</span>
+                        </div>
+                        <div class="px-3 py-1 bg-brand-dark text-brand-gold rounded-lg shadow-sm">
+                            <span class="text-xs font-bold uppercase tracking-wider">Mesa</span>
+                            <span class="text-lg font-bold ml-1">{{ $order->mesa ? $order->mesa->number : '?' }}</span>
+                        </div>
+                    </div>
+
+                    <div class="mb-4">
+                        <div class="flex justify-between mb-1">
+                            <span class="text-[10px] font-bold uppercase tracking-widest {{ $statusTextClass }}">{{ $order->status->value }}</span>
+                            <span class="text-[10px] font-bold text-gray-400">{{ $progressWidth }}</span>
+                        </div>
+                        <div class="w-full bg-gray-100 rounded-full h-2.5 overflow-hidden">
+                            <div class="h-2.5 rounded-full {{ $progressColor }} transition-all duration-1000 ease-out" style="width: {{ $progressWidth }}"></div>
+                        </div>
+                    </div>
+
+                    <div class="action-form-container mt-auto h-10 flex items-end">
+                        @if($actionHtml === 'LISTO')
+                            <form action="{{ route('orders.update-status', $order->id) }}" method="POST" class="w-full">
                                 @csrf
                                 <input type="hidden" name="status" value="Servido">
-                                <button type="submit"
-                                    style="background: white; color: #28a745; border: none; padding: 5px 10px; font-weight: bold; border-radius: 4px; cursor: pointer; width: 100%;">
-                                    ENTREGAR / SERVIR
+                                <button type="submit" class="w-full py-2 bg-green-600 hover:bg-green-700 text-white font-bold rounded-lg text-sm shadow-sm transition-colors flex items-center justify-center gap-2 transform active:scale-95">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                                    Servir
                                 </button>
                             </form>
+                        @else
+                            <div class="w-full text-center">
+                                <span class="text-xs text-gray-400 italic flex items-center justify-center gap-1">
+                                    <svg class="w-3 h-3 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                                    Trabajando...
+                                </span>
+                            </div>
                         @endif
                     </div>
                 </div>
             @endforeach
+            @if($activeOrders->isEmpty())
+                <div id="no-orders-msg" class="w-full h-full flex items-center justify-center text-gray-400 italic text-sm">No hay pedidos activos en cocina.</div>
+            @endif
         </div>
     </div>
-
+    
+    @if(session('invoice_id'))
+        <div id="pdf-modal-backdrop" class="fixed inset-0 z-[150] bg-black/60 backdrop-blur-sm transition-opacity duration-300"></div>
+        <div id="pdf-modal" class="fixed inset-0 z-[160] flex items-center justify-center p-4">
+            <div class="bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden transform transition-all scale-100 animate-fade-in-up border-t-4 border-brand-gold relative">
+                <button onclick="closePdfModal()" class="absolute top-2 right-2 text-gray-400 hover:text-brand-red p-2">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                </button>
+                <div class="p-8 text-center">
+                    <div class="mx-auto flex items-center justify-center h-20 w-20 rounded-full bg-green-100 mb-6 animate-bounce">
+                        <svg class="h-10 w-10 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                    </div>
+                    <h3 class="text-2xl font-serif font-bold text-brand-dark mb-2">¡Pedido Cerrado!</h3>
+                    <p class="text-gray-500 text-sm mb-8 leading-relaxed">El proceso se completó con éxito. Tu comprobante PDF está listo.</p>
+                    <a href="{{ route('invoices.download', session('invoice_id')) }}" onclick="closePdfModal()" class="block w-full py-4 bg-brand-red text-white font-bold rounded-xl shadow-lg hover:bg-red-800 hover:shadow-brand-red/40 hover:-translate-y-1 transition-all duration-300 flex items-center justify-center gap-2 group">
+                        <svg class="w-6 h-6 group-hover:animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+                        Descargar Ticket PDF
+                    </a>
+                </div>
+            </div>
+        </div>
+        @push('scripts')
+            <script>
+                function closePdfModal() {
+                    const modal = document.getElementById('pdf-modal');
+                    const backdrop = document.getElementById('pdf-modal-backdrop');
+                    if(modal) modal.remove();
+                    if(backdrop) backdrop.remove();
+                }
+                document.addEventListener('DOMContentLoaded', function() {
+                    const link = document.createElement('a');
+                    link.href = "{{ route('invoices.download', session('invoice_id')) }}";
+                    link.download = "Ticket-{{ session('invoice_id') }}.pdf";
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                });
+            </script>
+        @endpush
+    @endif
 
     @push('scripts')
         <script>
-            window.addEventListener('load', function () {
-                if (typeof Echo === 'undefined') {
-                    console.error('Echo no está definido.');
-                    return;
+            function updateClock() {
+                const now = new Date();
+                let hours = now.getHours();
+                const minutes = String(now.getMinutes()).padStart(2, '0');
+                const ampm = hours >= 12 ? 'PM' : 'AM';
+                hours = hours % 12;
+                hours = hours ? hours : 12; 
+                document.getElementById('live-clock').innerText = `${hours}:${minutes} ${ampm}`;
+            }
+            setInterval(updateClock, 1000);
+
+            function toggleOrdersPanel() {
+                const panel = document.getElementById('active-orders-panel');
+                const chevron = document.getElementById('panel-chevron');
+                const hint = document.getElementById('panel-text-hint');
+                
+                if (panel.classList.contains('h-80')) {
+                    panel.classList.remove('h-80');
+                    panel.classList.add('h-12');
+                    chevron.classList.remove('rotate-180');
+                    chevron.classList.add('rotate-0');
+                    hint.innerText = 'Mostrar';
+                } else {
+                    panel.classList.remove('h-12');
+                    panel.classList.add('h-80');
+                    chevron.classList.add('rotate-180');
+                    chevron.classList.remove('rotate-0');
+                    hint.innerText = 'Ocultar';
                 }
+            }
 
-                console.log('Suscribiendo a canal tables...');
-                Echo.channel('tables')
-                    .listen('.table.status.updated', (e) => {
-                        console.log('Evento TableStatusUpdated:', e);
-                        const mesaId = e.tableId;
-                        const status = e.status; // 'En Preparación', 'Listo', 'Servido'
+            window.addEventListener('load', function () {
+                if (typeof Echo === 'undefined') return;
 
-                        // Lógica del mapa de mesas
-                        const statusContainer = document.getElementById(`status-container-${mesaId}`);
-                        if (statusContainer) {
-                            if (status === 'Servido') {
-                                statusContainer.innerHTML = '<strong style="color: #d97706; font-size: 1.1em; display: block; margin-top: 5px;">PENDIENTE PAGO</strong>';
-                                // Opcional: Sonido diferente o mismo
-                            } else {
-                                // Para 'Listo' o 'En Preparación', mostramos estado normal o específico si se quiere
-                                statusContainer.innerHTML = '<strong>' + (status === 'En Preparación' ? 'En Preparación' : 'Ocupada') + '</strong>';
-                            }
+                Echo.channel('tables').listen('.table.status.updated', (e) => {
+                    const mesaId = e.tableId;
+                    const status = e.status; 
+                    const statusContainer = document.getElementById(`status-container-${mesaId}`);
+                    const card = document.getElementById(`mesa-card-${mesaId}`);
+                    
+                    if (statusContainer && card) {
+                        card.className = card.className.replace(/bg-\w+-50|border-\w+-\d+|ring-\d+|ring-\w+-\d+/g, '').trim();
+                        
+                        if (status === 'Servido') {
+                            statusContainer.innerHTML = '<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-amber-200 text-amber-900 animate-pulse">PENDIENTE PAGO</span>';
+                            card.classList.add('bg-amber-50', 'border-amber-300', 'ring-2', 'ring-amber-400');
+                        } else if (status === 'Libre') {
+                            statusContainer.innerHTML = '<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-green-200 text-green-900">Libre</span>';
+                            card.classList.add('bg-green-50', 'border-green-200');
+                            setTimeout(() => window.location.reload(), 500); 
+                        } else {
+                            statusContainer.innerHTML = `<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-red-200 text-red-900">${status === 'En Preparación' ? 'En Preparación' : 'Ocupada'}</span>`;
+                            card.classList.add('bg-red-50', 'border-red-200');
                         }
+                        card.style.transform = 'scale(1.05)';
+                        setTimeout(() => card.style.transform = 'scale(1)', 300);
+                    }
+                    updatePanelCardStatus(e.orderId, status);
+                });
 
-                        // Si el status pasa a Servido, quitar de la lista de listos (si está)
-                        if (status === 'Servido' && e.orderId) {
-                            const readyCard = document.getElementById(`ready-order-${e.orderId}`);
-                            if (readyCard) readyCard.remove();
-                        }
-
-                        // Animación tarjeta mesa
-                        const card = document.getElementById(`mesa-card-${mesaId}`);
-                        if (card) {
-                            card.style.transform = 'scale(1.05)';
-                            setTimeout(() => card.style.transform = 'scale(1)', 300);
-                        }
-                    });
-
-                // Nuevo Canal para Pedidos Listos
-                console.log('Suscribiendo a canal ready-orders...');
-                Echo.channel('ready-orders')
-                    .listen('.order.ready', (e) => {
-                        // REFACTOR: Usaremos un manejador unificado para actualizar el panel
-                        updateReadyOrdersPanel(e.order);
-                    });
-
-                // Escuchar cambios de estado generales para actualizar el panel
-                Echo.channel('tables')
-                    .listen('.table.status.updated', (e) => {
-                        // Si es un cambio de estado de pedido, podríamos necesitar refrescar el panel.
-                        // El evento TableStatusUpdated trae: tableId, status, orderId.
-                        // Sin embargo, NO trae la info completa del pedido (items, etc).
-                        // Por eso lo ideal es que el backend mande el evento con datos del pedido.
-                        // Asumiremos que OrderReadyToServe (o equivalente) se manda para CADA cambio importante
-                        // Por ahora, si recibimos esto y el pedido ya está en el panel, lo actualizamos visualmente.
-
-                        updatePanelCardStatus(e.orderId, e.status);
-                    });
-
-                // Escuchar nuevos pedidos (canal cocina) para agregarlos al panel como "En Cocina"
-                Echo.channel('kitchen-channel')
-                    .listen('.new-order', (e) => {
-                        console.log('Nuevo pedido en cocina, agregando al panel:', e.order);
-                        addOrUpdatePanelOrder(e.order);
-                    });
+                Echo.channel('ready-orders').listen('.order.ready', (e) => updateReadyOrdersPanel(e.order));
+                Echo.channel('kitchen-channel').listen('.new-order', (e) => addOrUpdatePanelOrder(e.order));
 
                 function addOrUpdatePanelOrder(order) {
                     const container = document.getElementById('active-orders-container');
+                    const noOrdersMsg = document.getElementById('no-orders-msg');
+                    const countBadge = document.getElementById('orders-count');
+                    
                     if (!container) return;
+                    if (noOrdersMsg) noOrdersMsg.remove();
+                    if(countBadge) countBadge.innerText = parseInt(countBadge.innerText || 0) + 1;
 
-                    // Verificar si ya existe
+                    const panel = document.getElementById('active-orders-panel');
+                    if(panel && panel.classList.contains('h-12')) {
+                        toggleOrdersPanel();
+                    }
+
                     let card = document.getElementById(`active-order-${order.id}`);
-
-                    // Definir colores y textos según estado
-                    let bgColor = '#0d6efd'; // Azul (En Cocina)
-                    let btnHtml = '';
-                    let statusText = order.status;
+                    
+                    let bgColor = 'bg-white border-gray-200';
+                    let progressWidth = '33%';
+                    let progressColor = 'bg-gray-400';
+                    let statusTextClass = 'text-gray-500';
+                    let actionHtml = '';
 
                     if (order.status === 'En Preparación') {
-                        bgColor = '#ffc107'; // Amarillo
+                        progressWidth = '66%';
+                        progressColor = 'bg-amber-500';
+                        statusTextClass = 'text-amber-600';
                     } else if (order.status === 'Listo') {
-                        bgColor = '#28a745'; // Verde
-                        btnHtml = `
-                                     <form action="/orders/${order.id}/status" method="POST">
-                                        <input type="hidden" name="_token" value="${document.querySelector('meta[name="csrf-token"]').getAttribute('content')}">
-                                        <input type="hidden" name="status" value="Servido">
-                                        <button type="submit" style="background: white; color: #28a745; border: none; padding: 5px 10px; font-weight: bold; border-radius: 4px; cursor: pointer; width: 100%;">
-                                            ENTREGAR / SERVIR
-                                        </button>
-                                    </form>
-                                `;
+                        progressWidth = '100%';
+                        progressColor = 'bg-green-500';
+                        statusTextClass = 'text-green-600';
+                        actionHtml = `
+                            <form action="/orders/${order.id}/status" method="POST" class="w-full">
+                                <input type="hidden" name="_token" value="${document.querySelector('meta[name="csrf-token"]').getAttribute('content')}">
+                                <input type="hidden" name="status" value="Servido">
+                                <button type="submit" class="w-full py-2 bg-green-600 hover:bg-green-700 text-white font-bold rounded-lg text-sm shadow-sm transition-colors flex items-center justify-center gap-2 transform active:scale-95">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                                    Servir
+                                </button>
+                            </form>
+                        `;
+                    } else {
+                        actionHtml = `
+                            <div class="w-full text-center">
+                                <span class="text-xs text-gray-400 italic flex items-center justify-center gap-1">
+                                    <svg class="w-3 h-3 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                                    Trabajando...
+                                </span>
+                            </div>
+                        `;
                     }
 
-                    // Si ya existe, actualizamos
                     if (card) {
-                        card.style.background = bgColor;
-                        // Actualizar botón si cambia a Listo
-                        const formContainer = card.querySelector('.action-form-container');
-                        if (formContainer) formContainer.innerHTML = btnHtml;
-                        return;
-                    }
-
-                    // Si no existe, crear
-                    // Nota: Para "En Cocina" order.mesa puede venir como objeto.
-                    const mesaNum = order.mesa ? order.mesa.number : '?';
-
-                    const html = `
-                                <div id="active-order-${order.id}" style="background: ${bgColor}; color: white; padding: 10px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.2); min-width: 250px; flex-shrink: 0; transition: background 0.3s;">
-                                    <h5 style="margin: 0 0 5px 0; font-size: 1.1em;">Pedido #${order.id} - Mesa ${mesaNum}</h5>
-                                    <p style="margin: 0 0 5px 0;"><strong>Estado: <span class="status-text">${statusText}</span></strong></p>
-                                    <div class="action-form-container">
-                                        ${btnHtml}
+                        card.className = `bg-white border-2 border-gray-200 rounded-2xl shadow-sm min-w-[280px] w-[280px] flex-shrink-0 flex flex-col justify-between p-5 transition-all duration-300 hover:shadow-md hover:border-brand-gold/30 group`;
+                        
+                        card.innerHTML = `
+                            <div class="flex justify-between items-center mb-4">
+                                <div class="flex items-baseline gap-1">
+                                    <span class="text-sm font-bold text-gray-400">#</span>
+                                    <span class="text-2xl font-serif font-bold text-brand-dark">${order.id}</span>
+                                </div>
+                                <div class="px-3 py-1 bg-brand-dark text-brand-gold rounded-lg shadow-sm">
+                                    <span class="text-xs font-bold uppercase tracking-wider">Mesa</span>
+                                    <span class="text-lg font-bold ml-1">${order.mesa ? order.mesa.number : '?'}</span>
+                                </div>
+                            </div>
+                            <div class="mb-4">
+                                <div class="flex justify-between mb-1">
+                                    <span class="text-[10px] font-bold uppercase tracking-widest ${statusTextClass}">${order.status}</span>
+                                    <span class="text-[10px] font-bold text-gray-400">${progressWidth}</span>
+                                </div>
+                                <div class="w-full bg-gray-100 rounded-full h-2.5 overflow-hidden">
+                                    <div class="h-2.5 rounded-full ${progressColor} transition-all duration-1000 ease-out" style="width: ${progressWidth}"></div>
+                                </div>
+                            </div>
+                            <div class="action-form-container mt-auto h-10 flex items-end">
+                                ${actionHtml}
+                            </div>
+                        `;
+                    } else {
+                        const mesaNum = order.mesa ? order.mesa.number : '?';
+                        const html = `
+                            <div id="active-order-${order.id}" class="bg-white border-2 border-gray-200 rounded-2xl shadow-sm min-w-[280px] w-[280px] flex-shrink-0 flex flex-col justify-between p-5 transition-all duration-300 hover:shadow-md hover:border-brand-gold/30 group animate-fade-in-up">
+                                <div class="flex justify-between items-center mb-4">
+                                    <div class="flex items-baseline gap-1">
+                                        <span class="text-sm font-bold text-gray-400">#</span>
+                                        <span class="text-2xl font-serif font-bold text-brand-dark">${order.id}</span>
+                                    </div>
+                                    <div class="px-3 py-1 bg-brand-dark text-brand-gold rounded-lg shadow-sm">
+                                        <span class="text-xs font-bold uppercase tracking-wider">Mesa</span>
+                                        <span class="text-lg font-bold ml-1">${mesaNum}</span>
                                     </div>
                                 </div>
-                            `;
-                    container.insertAdjacentHTML('beforeend', html);
+                                <div class="mb-4">
+                                    <div class="flex justify-between mb-1">
+                                        <span class="text-[10px] font-bold uppercase tracking-widest ${statusTextClass}">${order.status}</span>
+                                        <span class="text-[10px] font-bold text-gray-400">${progressWidth}</span>
+                                    </div>
+                                    <div class="w-full bg-gray-100 rounded-full h-2.5 overflow-hidden">
+                                        <div class="h-2.5 rounded-full ${progressColor} transition-all duration-1000 ease-out" style="width: ${progressWidth}"></div>
+                                    </div>
+                                </div>
+                                <div class="action-form-container mt-auto h-10 flex items-end">
+                                    ${actionHtml}
+                                </div>
+                            </div>
+                        `;
+                        container.insertAdjacentHTML('afterbegin', html);
+                    }
                 }
 
                 function updatePanelCardStatus(orderId, status) {
-                    const card = document.getElementById(`active-order-${orderId}`);
-                    if (!card) return;
-
-                    // Normalizar status
-                    console.log('Actualizando tarjeta panel:', orderId, status);
-
-                    if (status === 'En Preparación') {
-                        card.style.background = '#ffc107';
-                    } else if (status === 'Listo') {
-                        card.style.background = '#28a745';
-                        // Agregar botón dinámicamente si no existe ya
-                        const formContainer = card.querySelector('.action-form-container');
-                        // Verificamos si ya hay botón para no duplicar/romper, aunque innerHTML reemplaza
-                        if (formContainer) {
-                            formContainer.innerHTML = `
-                                        <form action="/orders/${orderId}/status" method="POST">
-                                            <input type="hidden" name="_token" value="${document.querySelector('meta[name="csrf-token"]').getAttribute('content')}">
-                                            <input type="hidden" name="status" value="Servido">
-                                            <button type="submit" style="background: white; color: #28a745; border: none; padding: 5px 10px; font-weight: bold; border-radius: 4px; cursor: pointer; width: 100%;">
-                                                ENTREGAR / SERVIR
-                                            </button>
-                                        </form>
-                                      `;
+                    if (status === 'Servido') {
+                        const card = document.getElementById(`active-order-${orderId}`);
+                        if (card) {
+                            card.style.transform = 'scale(0.9) opacity(0)';
+                            setTimeout(() => card.remove(), 300);
+                            const countBadge = document.getElementById('orders-count');
+                            if(countBadge) {
+                                let current = parseInt(countBadge.innerText);
+                                countBadge.innerText = Math.max(0, current - 1);
+                            }
                         }
-                        new Audio('/sounds/ping.mp3').play().catch(e => { });
-                    } else if (status === 'Servido') {
-                        card.remove();
+                    } else {
+                        addOrUpdatePanelOrder({ id: orderId, status: status, mesa: { number: '...' } }); 
                     }
-
-                    const statusText = card.querySelector('.status-text');
-                    if (statusText) statusText.innerText = status;
                 }
 
                 function updateReadyOrdersPanel(order) {
                     addOrUpdatePanelOrder(order);
-                    new Audio('/sounds/ping.mp3').play().catch(e => { });
+                    new Audio('/sounds/ping.mp3').play().catch(e => {});
                 }
             });
         </script>
