@@ -27,7 +27,6 @@ Route::get('/dashboard', [\App\Http\Controllers\DashboardController::class, 'ind
     ->name('dashboard');
 
 Route::resource('users', \App\Http\Controllers\UserController::class)
-    ->only(['index', 'create', 'store'])
     ->middleware(['auth', 'role:admin']);
 
 Route::get('/mesas', [MesaController::class, 'index'])
