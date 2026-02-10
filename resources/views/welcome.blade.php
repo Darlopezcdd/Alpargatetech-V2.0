@@ -27,6 +27,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&display=swap" rel="stylesheet">
 
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
 
     <script>
         tailwind.config = {
@@ -79,7 +80,7 @@
         .delay-500 { animation-delay: 500ms; }
 
         .glass-nav {
-            background: rgba(255, 255, 255, 0.85);
+            background: rgba(255, 255, 255, 0.95);
             backdrop-filter: blur(12px);
             border-bottom: 1px solid rgba(217, 191, 162, 0.2);
         }
@@ -89,40 +90,35 @@
             backdrop-filter: blur(8px);
         }
 
-        /* Custom scrollbar for webkit */
         ::-webkit-scrollbar { width: 8px; }
         ::-webkit-scrollbar-track { background: #f1f1f1; }
         ::-webkit-scrollbar-thumb { background: #D9BFA2; border-radius: 4px; }
         ::-webkit-scrollbar-thumb:hover { background: #A53534; }
     </style>
 </head>
-<body class="antialiased bg-brand-white text-brand-dark overflow-x-hidden flex flex-col min-h-screen">
+<body class="antialiased bg-brand-white text-brand-dark overflow-x-hidden flex flex-col min-h-screen" x-data="{ mobileMenuOpen: false }">
 
-
-    <nav class="glass-nav fixed w-full z-50 shadow-sm transition-all duration-300 h-24">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-full">
-            <div class="flex flex-col md:flex-row justify-between items-center h-full py-2 md:py-0">
+    <nav class="glass-nav fixed w-full z-50 shadow-sm transition-all duration-300 h-20 md:h-24 flex items-center">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
+            <div class="flex justify-between items-center h-full">
                 
-
                 <div class="flex-shrink-0 flex items-center animate-fade-in-up">
                     <a href="#" class="flex items-center gap-3 group">
                         @if(!empty($imgLogo))
-                            <img src="{{ $imgLogo }}" alt="Alpargate 3 Logo" class="h-14 w-auto object-contain group-hover:scale-105 transition-transform duration-500 drop-shadow-md">
+                            <img src="{{ $imgLogo }}" alt="Alpargate 3 Logo" class="h-10 md:h-14 w-auto object-contain group-hover:scale-105 transition-transform duration-500 drop-shadow-md">
                         @else
-                            <span class="font-bold text-3xl text-brand-red font-serif tracking-tight cursor-default group-hover:text-brand-gold transition-colors duration-300">
+                            <span class="font-bold text-2xl md:text-3xl text-brand-red font-serif tracking-tight cursor-default group-hover:text-brand-gold transition-colors duration-300">
                                 Alpargate 3
                             </span>
                         @endif
                     </a>
                 </div>
 
-
                 <div class="hidden md:flex space-x-12 items-center justify-center flex-1 mx-8 animate-fade-in-up delay-100">
                     <a href="#" class="text-brand-gray hover:text-brand-red font-medium transition-all duration-300 text-sm uppercase tracking-widest hover:tracking-[0.2em]">Inicio</a>
                     <a href="https://drive.google.com/file/d/1R0QdZygLOxyU_ZYiYkxpdkLnYHF4uVKk/view?usp=sharing" target="_blank" class="text-brand-gray hover:text-brand-red font-medium transition-all duration-300 text-sm uppercase tracking-widest hover:tracking-[0.2em]">Menú</a>
                     <a href="#nosotros" class="text-brand-gray hover:text-brand-red font-medium transition-all duration-300 text-sm uppercase tracking-widest hover:tracking-[0.2em]">Nosotros</a>
                 </div>
-
 
                 <div class="hidden md:flex items-center animate-fade-in-up delay-200">
                     @if (Route::has('login'))
@@ -138,10 +134,50 @@
                         @endauth
                     @endif
                 </div>
+
+                <div class="-mr-2 flex md:hidden">
+                    <button @click="mobileMenuOpen = !mobileMenuOpen" type="button" class="inline-flex items-center justify-center p-2 rounded-md text-brand-gray hover:text-brand-red hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-brand-gold" aria-controls="mobile-menu" aria-expanded="false">
+                        <span class="sr-only">Abrir menú</span>
+                        <svg class="h-6 w-6" :class="{'hidden': mobileMenuOpen, 'block': !mobileMenuOpen }" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+                        </svg>
+                        <svg class="h-6 w-6" :class="{'block': mobileMenuOpen, 'hidden': !mobileMenuOpen }" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div class="md:hidden bg-white/95 backdrop-blur-xl border-t border-brand-gold/20 absolute top-20 w-full shadow-2xl" id="mobile-menu" x-show="mobileMenuOpen" 
+             x-transition:enter="transition ease-out duration-200"
+             x-transition:enter-start="opacity-0 -translate-y-2"
+             x-transition:enter-end="opacity-100 translate-y-0"
+             x-transition:leave="transition ease-in duration-150"
+             x-transition:leave-start="opacity-100 translate-y-0"
+             x-transition:leave-end="opacity-0 -translate-y-2"
+             style="display: none;">
+            <div class="px-2 pt-4 pb-6 space-y-2">
+                <a href="#" class="block px-3 py-3 text-center text-base font-medium text-brand-dark hover:text-brand-red hover:bg-gray-50 rounded-lg transition-colors font-serif">Inicio</a>
+                <a href="https://drive.google.com/file/d/1R0QdZygLOxyU_ZYiYkxpdkLnYHF4uVKk/view?usp=sharing" target="_blank" class="block px-3 py-3 text-center text-base font-medium text-brand-dark hover:text-brand-red hover:bg-gray-50 rounded-lg transition-colors font-serif">Menú</a>
+                <a href="#nosotros" class="block px-3 py-3 text-center text-base font-medium text-brand-dark hover:text-brand-red hover:bg-gray-50 rounded-lg transition-colors font-serif">Nosotros</a>
+                
+                <div class="mt-6 border-t border-gray-100 pt-6 px-4">
+                    @if (Route::has('login'))
+                        @auth
+                            <a href="{{ route('login') }}" class="block w-full text-center px-6 py-3 bg-brand-dark text-brand-gold font-bold uppercase tracking-widest rounded-full shadow-md">
+                                Ingresar al Sistema
+                            </a>
+                        @else
+                            <a href="{{ route('login') }}" class="block w-full text-center px-6 py-3 bg-brand-red text-white font-bold uppercase tracking-widest rounded-full shadow-md">
+                                Iniciar Sesión
+                            </a>
+                        @endauth
+                    @endif
+                </div>
             </div>
         </div>
     </nav>
-
 
     <div class="relative pt-24 flex content-center items-center justify-center min-h-screen overflow-hidden">
         <div class="absolute top-0 w-full h-full bg-center bg-cover transform scale-105" 
@@ -151,41 +187,40 @@
 
         <div class="container relative mx-auto z-10 px-4 text-center">
             <div class="animate-zoom-in flex flex-col items-center">
-                <span class="inline-block py-1 px-3 border border-brand-gold/50 rounded-full text-brand-gold font-serif text-sm md:text-base tracking-[0.3em] uppercase mb-6 bg-black/30 backdrop-blur-sm animate-fade-in-up delay-100">
+                <span class="inline-block py-1 px-3 border border-brand-gold/50 rounded-full text-brand-gold font-serif text-xs md:text-base tracking-[0.3em] uppercase mb-6 bg-black/30 backdrop-blur-sm animate-fade-in-up delay-100">
                     Bienvenidos a
                 </span>
                 
-                <h1 class="text-white font-bold text-6xl md:text-8xl mb-8 drop-shadow-2xl font-serif leading-none tracking-tight animate-fade-in-up delay-200">
+                <h1 class="text-white font-bold text-5xl md:text-8xl mb-8 drop-shadow-2xl font-serif leading-none tracking-tight animate-fade-in-up delay-200">
                     Alpargate 3
                 </h1>
                 
                 <div class="w-24 h-1 bg-gradient-to-r from-transparent via-brand-red to-transparent mx-auto mb-8 rounded-full animate-fade-in-up delay-300"></div>
                 
-                <p class="mt-2 text-xl md:text-3xl text-gray-200 font-light max-w-3xl mx-auto leading-relaxed animate-fade-in-up delay-300">
+                <p class="mt-2 text-lg md:text-3xl text-gray-200 font-light max-w-3xl mx-auto leading-relaxed animate-fade-in-up delay-300">
                     Donde la <span class="text-brand-gold font-medium italic">tradición</span> cobra vida y cada sabor cuenta una historia inolvidable.
                 </p>
                 
-                <div class="mt-12 flex flex-col md:flex-row justify-center items-center gap-6 animate-fade-in-up delay-500 w-full">
-                    <a href="https://wa.me/593995352709" target="_blank" class="w-full md:w-auto px-10 py-4 bg-brand-red text-white font-bold rounded-full shadow-2xl hover:bg-[#8B2D2C] transition-all duration-300 flex items-center justify-center gap-3 group transform hover:scale-105 hover:shadow-brand-red/40">
+                <div class="mt-12 flex flex-col md:flex-row justify-center items-center gap-4 md:gap-6 animate-fade-in-up delay-500 w-full max-w-md md:max-w-none mx-auto">
+                    <a href="https://wa.me/593995352709" target="_blank" class="w-full md:w-auto px-8 py-4 bg-brand-red text-white font-bold rounded-full shadow-2xl hover:bg-[#8B2D2C] transition-all duration-300 flex items-center justify-center gap-3 group transform hover:scale-105 hover:shadow-brand-red/40">
                         <span>Reservar Mesa</span>
                         <svg class="w-5 h-5 transition-transform group-hover:translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"></path></svg>
                     </a>
                     
-                    <a href="https://drive.google.com/file/d/1R0QdZygLOxyU_ZYiYkxpdkLnYHF4uVKk/view?usp=sharing" target="_blank" class="w-full md:w-auto px-10 py-4 bg-white/10 backdrop-blur-md border border-white/30 text-white font-bold rounded-full hover:bg-white hover:text-brand-dark transition-all duration-300 transform hover:scale-105 shadow-xl">
+                    <a href="https://drive.google.com/file/d/1R0QdZygLOxyU_ZYiYkxpdkLnYHF4uVKk/view?usp=sharing" target="_blank" class="w-full md:w-auto px-8 py-4 bg-white/10 backdrop-blur-md border border-white/30 text-white font-bold rounded-full hover:bg-white hover:text-brand-dark transition-all duration-300 transform hover:scale-105 shadow-xl">
                         Ver Menú Completo
                     </a>
                 </div>
             </div>
         </div>
         
-        <div class="absolute bottom-10 left-1/2 transform -translate-x-1/2 animate-float text-white/70 hover:text-brand-gold transition-colors cursor-pointer">
+        <div class="absolute bottom-10 left-1/2 transform -translate-x-1/2 animate-float text-white/70 hover:text-brand-gold transition-colors cursor-pointer hidden md:block">
              <a href="#nosotros" class="flex flex-col items-center">
                  <span class="text-[10px] uppercase tracking-widest mb-2">Descubre Más</span>
                  <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 14l-7 7m0 0l-7-7m7 7V3"></path></svg>
              </a>
         </div>
     </div>
-
 
     <section class="py-24 bg-brand-white relative z-10" id="nosotros">
         <div class="container mx-auto px-4">
@@ -196,7 +231,6 @@
 
             <div class="grid grid-cols-1 md:grid-cols-3 gap-10 max-w-6xl mx-auto">
                 
-
                 <div class="group bg-white rounded-3xl shadow-xl overflow-hidden cursor-pointer transform transition-all duration-500 hover:-translate-y-3 hover:shadow-2xl border border-gray-100">
                     <div class="h-72 overflow-hidden relative">
                         <div class="absolute inset-0 bg-black/20 group-hover:bg-black/0 transition-all duration-500 z-10"></div>
@@ -215,7 +249,6 @@
                     </div>
                 </div>
 
-
                 <div class="group bg-white rounded-3xl shadow-xl overflow-hidden cursor-pointer transform transition-all duration-500 hover:-translate-y-3 hover:shadow-2xl border border-gray-100 md:-mt-8">
                     <div class="h-72 overflow-hidden relative">
                          <div class="absolute inset-0 bg-black/20 group-hover:bg-black/0 transition-all duration-500 z-10"></div>
@@ -233,7 +266,6 @@
                         </p>
                     </div>
                 </div>
-
 
                 <div class="group bg-white rounded-3xl shadow-xl overflow-hidden cursor-pointer transform transition-all duration-500 hover:-translate-y-3 hover:shadow-2xl border border-gray-100">
                     <div class="h-72 overflow-hidden relative">
@@ -257,16 +289,13 @@
         </div>
     </section>
 
-
     <footer class="bg-[#0a0a0a] text-white py-12 mt-auto border-t border-brand-gold/10">
         <div class="container mx-auto px-4">
             <div class="flex flex-col items-center justify-center text-center">
                 
-
                 <div class="mb-6">
                     <span class="font-serif text-2xl md:text-3xl text-brand-gold tracking-widest font-bold">ALPARGATE 3</span>
                 </div>
-
 
                 <div class="flex gap-8 mb-8 text-sm text-gray-400 uppercase tracking-widest">
                     <a href="#" class="hover:text-white transition-colors">Inicio</a>
@@ -274,9 +303,7 @@
                     <a href="#nosotros" class="hover:text-white transition-colors">Contacto</a>
                 </div>
 
-
                 <div class="w-16 h-px bg-brand-gold/30 mb-8"></div>
-
 
                 <div class="flex gap-6 mb-8">
                     <a href="https://wa.me/593995352709" target="_blank" class="w-12 h-12 bg-gray-800 text-white rounded-full flex items-center justify-center hover:bg-[#25D366] hover:scale-110 transition-all duration-300 shadow-xl group">
@@ -286,7 +313,6 @@
                         <svg class="w-6 h-6 fill-current group-hover:fill-white" viewBox="0 0 24 24"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.791-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>
                     </a>
                 </div>
-
 
                 <div class="text-xs text-brand-gray font-light">
                     <p>&copy; {{ date('Y') }} Alpargate 3. Todos los derechos reservados.</p>
