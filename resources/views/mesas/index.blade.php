@@ -266,168 +266,45 @@
             }
 
             window.addEventListener('load', function () {
-                if (typeof Echo === 'undefined') return;
-
-                Echo.channel('tables').listen('.table.status.updated', (e) => {
-                    const mesaId = e.tableId;
-                    const status = e.status; 
-                    const statusContainer = document.getElementById(`status-container-${mesaId}`);
-                    const card = document.getElementById(`mesa-card-${mesaId}`);
-                    
-                    if (statusContainer && card) {
-                        card.className = card.className.replace(/bg-\w+-50|border-\w+-\d+|ring-\d+|ring-\w+-\d+/g, '').trim();
-                        
-                        if (status === 'Servido') {
-                            statusContainer.innerHTML = '<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-amber-200 text-amber-900 animate-pulse">PENDIENTE PAGO</span>';
-                            card.classList.add('bg-amber-50', 'border-amber-300', 'ring-2', 'ring-amber-400');
-                        } else if (status === 'Libre') {
-                            statusContainer.innerHTML = '<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-green-200 text-green-900">Libre</span>';
-                            card.classList.add('bg-green-50', 'border-green-200');
-                            setTimeout(() => window.location.reload(), 500); 
-                        } else {
-                            statusContainer.innerHTML = `<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-red-200 text-red-900">${status === 'En Preparación' ? 'En Preparación' : 'Ocupada'}</span>`;
-                            card.classList.add('bg-red-50', 'border-red-200');
-                        }
-                        card.style.transform = 'scale(1.05)';
-                        setTimeout(() => card.style.transform = 'scale(1)', 300);
-                    }
-                    updatePanelCardStatus(e.orderId, status);
-                });
-
-                Echo.channel('ready-orders').listen('.order.ready', (e) => updateReadyOrdersPanel(e.order));
-                Echo.channel('kitchen-channel').listen('.new-order', (e) => addOrUpdatePanelOrder(e.order));
-
-                function addOrUpdatePanelOrder(order) {
-                    const container = document.getElementById('active-orders-container');
-                    const noOrdersMsg = document.getElementById('no-orders-msg');
-                    const countBadge = document.getElementById('orders-count');
-                    
-                    if (!container) return;
-                    if (noOrdersMsg) noOrdersMsg.remove();
-                    if(countBadge) countBadge.innerText = parseInt(countBadge.innerText || 0) + 1;
-
-                    const panel = document.getElementById('active-orders-panel');
-                    if(panel && panel.classList.contains('h-12')) {
-                        toggleOrdersPanel();
-                    }
-
-                    let card = document.getElementById(`active-order-${order.id}`);
-                    
-                    let bgColor = 'bg-white border-gray-200';
-                    let progressWidth = '33%';
-                    let progressColor = 'bg-gray-400';
-                    let statusTextClass = 'text-gray-500';
-                    let actionHtml = '';
-
-                    if (order.status === 'En Preparación') {
-                        progressWidth = '66%';
-                        progressColor = 'bg-amber-500';
-                        statusTextClass = 'text-amber-600';
-                    } else if (order.status === 'Listo') {
-                        progressWidth = '100%';
-                        progressColor = 'bg-green-500';
-                        statusTextClass = 'text-green-600';
-                        actionHtml = `
-                            <form action="/orders/${order.id}/status" method="POST" class="w-full">
-                                <input type="hidden" name="_token" value="${document.querySelector('meta[name="csrf-token"]').getAttribute('content')}">
-                                <input type="hidden" name="status" value="Servido">
-                                <button type="submit" class="w-full py-2 bg-green-600 hover:bg-green-700 text-white font-bold rounded-lg text-sm shadow-sm transition-colors flex items-center justify-center gap-2 transform active:scale-95">
-                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
-                                    Servir
-                                </button>
-                            </form>
-                        `;
-                    } else {
-                        actionHtml = `
-                            <div class="w-full text-center">
-                                <span class="text-xs text-gray-400 italic flex items-center justify-center gap-1">
-                                    <svg class="w-3 h-3 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
-                                    Trabajando...
-                                </span>
-                            </div>
-                        `;
-                    }
-
-                    if (card) {
-                        card.className = `bg-white border-2 border-gray-200 rounded-2xl shadow-sm min-w-[280px] w-[280px] flex-shrink-0 flex flex-col justify-between p-5 transition-all duration-300 hover:shadow-md hover:border-brand-gold/30 group`;
-                        
-                        card.innerHTML = `
-                            <div class="flex justify-between items-center mb-4">
-                                <div class="flex items-baseline gap-1">
-                                    <span class="text-sm font-bold text-gray-400">#</span>
-                                    <span class="text-2xl font-serif font-bold text-brand-dark">${order.id}</span>
-                                </div>
-                                <div class="px-3 py-1 bg-brand-dark text-brand-gold rounded-lg shadow-sm">
-                                    <span class="text-xs font-bold uppercase tracking-wider">Mesa</span>
-                                    <span class="text-lg font-bold ml-1">${order.mesa ? order.mesa.number : '?'}</span>
-                                </div>
-                            </div>
-                            <div class="mb-4">
-                                <div class="flex justify-between mb-1">
-                                    <span class="text-[10px] font-bold uppercase tracking-widest ${statusTextClass}">${order.status}</span>
-                                    <span class="text-[10px] font-bold text-gray-400">${progressWidth}</span>
-                                </div>
-                                <div class="w-full bg-gray-100 rounded-full h-2.5 overflow-hidden">
-                                    <div class="h-2.5 rounded-full ${progressColor} transition-all duration-1000 ease-out" style="width: ${progressWidth}"></div>
-                                </div>
-                            </div>
-                            <div class="action-form-container mt-auto h-10 flex items-end">
-                                ${actionHtml}
-                            </div>
-                        `;
-                    } else {
-                        const mesaNum = order.mesa ? order.mesa.number : '?';
-                        const html = `
-                            <div id="active-order-${order.id}" class="bg-white border-2 border-gray-200 rounded-2xl shadow-sm min-w-[280px] w-[280px] flex-shrink-0 flex flex-col justify-between p-5 transition-all duration-300 hover:shadow-md hover:border-brand-gold/30 group animate-fade-in-up">
-                                <div class="flex justify-between items-center mb-4">
-                                    <div class="flex items-baseline gap-1">
-                                        <span class="text-sm font-bold text-gray-400">#</span>
-                                        <span class="text-2xl font-serif font-bold text-brand-dark">${order.id}</span>
-                                    </div>
-                                    <div class="px-3 py-1 bg-brand-dark text-brand-gold rounded-lg shadow-sm">
-                                        <span class="text-xs font-bold uppercase tracking-wider">Mesa</span>
-                                        <span class="text-lg font-bold ml-1">${mesaNum}</span>
-                                    </div>
-                                </div>
-                                <div class="mb-4">
-                                    <div class="flex justify-between mb-1">
-                                        <span class="text-[10px] font-bold uppercase tracking-widest ${statusTextClass}">${order.status}</span>
-                                        <span class="text-[10px] font-bold text-gray-400">${progressWidth}</span>
-                                    </div>
-                                    <div class="w-full bg-gray-100 rounded-full h-2.5 overflow-hidden">
-                                        <div class="h-2.5 rounded-full ${progressColor} transition-all duration-1000 ease-out" style="width: ${progressWidth}"></div>
-                                    </div>
-                                </div>
-                                <div class="action-form-container mt-auto h-10 flex items-end">
-                                    ${actionHtml}
-                                </div>
-                            </div>
-                        `;
-                        container.insertAdjacentHTML('afterbegin', html);
-                    }
-                }
-
-                function updatePanelCardStatus(orderId, status) {
-                    if (status === 'Servido') {
-                        const card = document.getElementById(`active-order-${orderId}`);
-                        if (card) {
-                            card.style.transform = 'scale(0.9) opacity(0)';
-                            setTimeout(() => card.remove(), 300);
-                            const countBadge = document.getElementById('orders-count');
-                            if(countBadge) {
-                                let current = parseInt(countBadge.innerText);
-                                countBadge.innerText = Math.max(0, current - 1);
+                // POLLING STRATEGY FOR ACTIVE ORDERS (5 Seconds)
+                setInterval(() => {
+                    fetch(window.location.href)
+                        .then(response => response.text())
+                        .then(html => {
+                            const parser = new DOMParser();
+                            const doc = parser.parseFromString(html, 'text/html');
+                            
+                            // 1. Update Active Orders Panel
+                            const newContainer = doc.getElementById('active-orders-container');
+                            const currentContainer = document.getElementById('active-orders-container');
+                            
+                            if (newContainer && currentContainer) {
+                                if (newContainer.innerHTML !== currentContainer.innerHTML) {
+                                    currentContainer.innerHTML = newContainer.innerHTML;
+                                }
                             }
-                        }
-                    } else {
-                        addOrUpdatePanelOrder({ id: orderId, status: status, mesa: { number: '...' } }); 
-                    }
-                }
 
-                function updateReadyOrdersPanel(order) {
-                    addOrUpdatePanelOrder(order);
-                    new Audio('/sounds/ping.mp3').play().catch(e => {});
-                }
+                            // 2. Update Order Count Badge
+                            const newCount = doc.getElementById('orders-count');
+                            const currentCount = document.getElementById('orders-count');
+                            if(newCount && currentCount) {
+                                currentCount.innerText = newCount.innerText;
+                            }
+
+                            // 3. Update Table Statuses (Grid)
+                            // We loop through all tables in the new DOM and update if changed
+                            const newTables = doc.querySelectorAll('[id^="mesa-card-"]');
+                            newTables.forEach(newTable => {
+                                const id = newTable.id;
+                                const currentTable = document.getElementById(id);
+                                if (currentTable && newTable.innerHTML !== currentTable.innerHTML) {
+                                    // Replace the whole card to catch class changes (colors) and content
+                                    currentTable.outerHTML = newTable.outerHTML;
+                                }
+                            });
+                        })
+                        .catch(err => console.error('Error polling updates:', err));
+                }, 5000);
             });
         </script>
     @endpush

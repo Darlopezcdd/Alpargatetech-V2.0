@@ -166,98 +166,42 @@
                 updateClock();
                 setInterval(updateClock, 1000);
 
+                // POLLING STRATEGY (5 Seconds)
                 const debugDiv = document.getElementById('ws-debug-status');
                 const wsText = document.getElementById('ws-text');
                 const wsDot = document.getElementById('ws-dot');
                 const wsDotPing = document.getElementById('ws-dot-ping');
-                const container = document.getElementById('kitchen-orders');
-                const noOrdersMsg = document.getElementById('no-orders-msg');
-                const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
 
-                if (typeof Echo === 'undefined') {
-                    console.error('Error: Echo is undefined.');
-                    if (wsText) wsText.innerHTML = 'ERROR JS';
-                    return;
-                }
-
-                Echo.connector.pusher.connection.bind('connected', () => {
-                    if (wsText) {
-                        wsText.innerText = 'EN LÍNEA';
-                        wsText.classList.remove('text-brand-gray');
-                        wsText.classList.add('text-green-600');
-                        wsDot.classList.replace('bg-orange-500', 'bg-green-500');
-                        wsDotPing.classList.replace('bg-orange-400', 'bg-green-400');
-                        debugDiv.classList.add('border-green-200', 'bg-green-50');
-                    }
-                });
-
-                Echo.connector.pusher.connection.bind('unavailable', () => {
-                    if (wsText) {
-                        wsText.innerText = 'OFFLINE';
-                        wsText.classList.add('text-red-600');
-                        wsDot.classList.replace('bg-green-500', 'bg-red-500');
-                        wsDotPing.classList.replace('bg-green-400', 'bg-red-400');
-                    }
-                });
-
-                const channel = Echo.channel('kitchen-channel');
-
-                channel.listen('.new-order', (e) => {
-                    console.log('Nuevo pedido:', e.order);
-
-                    wsText.innerText = 'RECIBIENDO...';
+                // Set initial status
+                if (wsText) {
+                    wsText.innerText = 'AUTO-RELOAD';
                     wsText.classList.add('text-blue-600');
-                    setTimeout(() => {
-                        wsText.innerText = 'EN LÍNEA';
-                        wsText.classList.remove('text-blue-600');
-                    }, 2000);
+                }
+                if (wsDot) wsDot.classList.replace('bg-orange-500', 'bg-blue-500');
+                if (wsDotPing) wsDotPing.classList.replace('bg-orange-400', 'bg-blue-400');
+                if (debugDiv) debugDiv.classList.add('border-blue-200', 'bg-blue-50');
 
-                    if (noOrdersMsg) noOrdersMsg.style.display = 'none';
+                setInterval(() => {
+                    fetch(window.location.href)
+                        .then(response => response.text())
+                        .then(html => {
+                            const parser = new DOMParser();
+                            const doc = parser.parseFromString(html, 'text/html');
 
-                    const itemsHtml = e.order.items.map(item => `
-                            <li class="flex flex-col border-b border-gray-100 last:border-0 pb-2 last:pb-0">
-                                <div class="flex items-baseline gap-2 text-brand-dark">
-                                    <span class="font-bold text-lg text-brand-red">${item.quantity}x</span>
-                                    <span class="font-medium leading-tight text-sm">${item.product.name}</span>
-                                </div>
-                                ${item.notes ? `
-                                    <div class="mt-1 flex items-start gap-1 text-xs text-gray-600 italic bg-yellow-50 p-2 rounded border border-yellow-100">
-                                        <svg class="w-3 h-3 mt-0.5 flex-shrink-0 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z"></path></svg>
-                                        ${item.notes}
-                                    </div>
-                                ` : ''}
-                            </li>
-                        `).join('');
+                            const newOrders = doc.getElementById('kitchen-orders');
+                            const currentOrders = document.getElementById('kitchen-orders');
 
-                    const newCard = `
-                            <div class="order-card relative flex flex-col p-6 rounded-2xl shadow-lg border-l-8 border-brand-red bg-white transition-all duration-300 hover:-translate-y-1 hover:shadow-xl animate-fade-in-up">
-                                <div class="flex justify-between items-start mb-4 border-b border-gray-100 pb-3">
-                                    <div>
-                                        <h3 class="font-serif text-2xl font-bold text-brand-dark">Mesa ${e.order.mesa.number}</h3>
-                                        <span class="text-xs font-mono text-gray-400 font-bold tracking-widest">#${e.order.id}</span>
-                                    </div>
-                                    <span class="px-3 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider shadow-sm bg-brand-red text-white">
-                                        En Cocina
-                                    </span>
-                                </div>
-                                <ul class="flex-1 space-y-3 mb-6">
-                                    ${itemsHtml}
-                                </ul>
-                                <div class="mt-auto pt-4">
-                                    <form action="/orders/${e.order.id}/status" method="POST" class="w-full">
-                                        <input type="hidden" name="_token" value="${csrfToken}">
-                                        <input type="hidden" name="status" value="En Preparación">
-                                        <button type="submit" class="w-full py-3 px-4 rounded-xl font-bold text-xs uppercase tracking-widest shadow-md transition-all duration-300 transform active:scale-95 bg-brand-dark hover:bg-gray-800 text-brand-gold">
-                                            EMPEZAR A PREPARAR
-                                        </button>
-                                    </form>
-                                </div>
-                            </div>
-                        `;
-
-                    container.insertAdjacentHTML('afterbegin', newCard);
-                    new Audio('/sounds/ping.mp3').play().catch(err => console.log('Audio autoplay bloqueado', err));
-                });
+                            if (newOrders && currentOrders) {
+                                // Simple content replacement
+                                if (newOrders.innerHTML !== currentOrders.innerHTML) {
+                                    currentOrders.innerHTML = newOrders.innerHTML;
+                                    // Optional: Play sound if number of orders increased? 
+                                    // For now just valid update
+                                }
+                            }
+                        })
+                        .catch(err => console.error('Error polling updates:', err));
+                }, 5000);
             });
         </script>
     @endpush
