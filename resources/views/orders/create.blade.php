@@ -1,7 +1,7 @@
 @extends('layouts.app')
 
 @section('content')
-<div class="container mx-auto px-4 py-6 font-sans text-brand-dark h-[calc(100vh-80px)]" 
+<div class="container mx-auto px-4 py-6 font-sans text-brand-dark lg:h-[calc(100vh-80px)] h-auto" 
      x-data="{ 
         items: [],
         addToCart(product) {
@@ -33,9 +33,15 @@
      }">
 
     <div class="flex flex-col xl:flex-row justify-between items-end mb-6 border-b border-brand-gold/20 pb-4 gap-4">
-        <div>
-            <h6 class="text-brand-gray font-bold tracking-[0.2em] uppercase text-xs mb-1">Nueva Comanda</h6>
-            <h1 class="font-serif text-3xl md:text-4xl font-bold text-brand-dark">Mesa {{ $mesa->number }}</h1>
+        <div class="flex items-center gap-4 w-full xl:w-auto">
+            <a href="{{ route('mesas.index') }}" 
+               class="flex-shrink-0 w-12 h-12 flex items-center justify-center rounded-full bg-white border border-brand-gold/30 text-brand-dark shadow-sm hover:bg-brand-gold hover:text-white transition-all duration-300 group">
+                <svg class="w-5 h-5 group-hover:-translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
+            </a>
+            <div>
+                <h6 class="text-brand-gray font-bold tracking-[0.2em] uppercase text-xs mb-1">Nueva Comanda</h6>
+                <h1 class="font-serif text-3xl md:text-4xl font-bold text-brand-dark">Mesa {{ $mesa->number }}</h1>
+            </div>
         </div>
         
         <div class="flex flex-wrap items-center gap-3">
@@ -46,7 +52,9 @@
                 </div>
                 <div class="text-right">
                     <p class="text-[8px] font-bold text-brand-gray/60 uppercase tracking-widest leading-none mb-1">Fecha</p>
-                    <p id="live-date" class="text-[10px] font-bold text-brand-dark uppercase tracking-wide leading-none">CARGANDO...</p>
+                    <p id="live-date" class="text-[10px] font-bold text-brand-dark uppercase tracking-wide leading-none">
+                        {{ now()->setTimezone('America/Guayaquil')->locale('es')->isoFormat('dddd, D [de] MMMM [de] YYYY') }}
+                    </p>
                 </div>
             </div>
 
@@ -56,7 +64,9 @@
                 </div>
                 <div class="text-right">
                     <p class="text-[8px] font-bold text-brand-gray/60 uppercase tracking-widest leading-none mb-1">Hora</p>
-                    <p id="live-clock" class="text-lg font-serif font-bold text-brand-dark leading-none">--:--</p>
+                    <p id="live-clock" class="text-lg font-serif font-bold text-brand-dark leading-none">
+                        {{ now()->setTimezone('America/Guayaquil')->format('h:i A') }}
+                    </p>
                 </div>
             </div>
 
@@ -67,9 +77,9 @@
         </div>
     </div>
 
-    <div class="flex flex-col lg:flex-row gap-6 h-full pb-20">
+    <div class="flex flex-col lg:flex-row gap-6 lg:h-full pb-10 lg:pb-0">
         
-        <div class="flex-1 overflow-y-auto pr-2 custom-scrollbar">
+        <div class="flex-1 lg:overflow-y-auto pr-0 lg:pr-2 custom-scrollbar">
             @foreach($categories as $category)
                 <div class="mb-8">
                     <h2 class="font-serif text-xl font-bold text-brand-red mb-4 flex items-center gap-3">
@@ -100,16 +110,16 @@
             @endforeach
         </div>
 
-        <div class="w-full lg:w-[400px] flex flex-col h-full bg-white rounded-3xl shadow-xl border border-brand-gold/20 overflow-hidden relative">
+        <div class="w-full lg:w-[400px] flex flex-col bg-white rounded-3xl shadow-xl border border-brand-gold/20 overflow-hidden relative lg:h-full h-auto mt-6 lg:mt-0">
             
             <div class="bg-brand-dark p-5 text-center">
                 <h3 class="text-brand-gold font-serif text-xl font-bold">Resumen del Pedido</h3>
                 <p class="text-brand-gray text-xs uppercase tracking-widest mt-1">La Casa de Alfonso</p>
             </div>
 
-            <div class="flex-1 overflow-y-auto p-4 space-y-3 custom-scrollbar bg-gray-50/50">
+            <div class="flex-1 lg:overflow-y-auto p-4 space-y-3 custom-scrollbar bg-gray-50/50 min-h-[200px] lg:min-h-0">
                 <template x-if="items.length === 0">
-                    <div class="h-full flex flex-col items-center justify-center text-gray-400 opacity-60">
+                    <div class="h-full flex flex-col items-center justify-center text-gray-400 opacity-60 py-10 lg:py-0">
                         <svg class="w-16 h-16 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"></path></svg>
                         <p class="text-sm font-medium">Selecciona productos del menú</p>
                     </div>
@@ -135,7 +145,7 @@
                 </template>
             </div>
 
-            <div class="bg-white p-5 border-t border-gray-200 shadow-[0_-5px_20px_rgba(0,0,0,0.05)] z-10">
+            <div class="bg-white p-5 border-t border-gray-200 shadow-[0_-5px_20px_rgba(0,0,0,0.05)] z-10 sticky bottom-0">
                 <div class="flex justify-between items-end mb-4">
                     <span class="text-sm font-bold text-brand-gray uppercase tracking-widest">Total</span>
                     <span class="font-serif text-3xl font-bold text-brand-dark">$<span x-text="total()"></span></span>
@@ -144,7 +154,7 @@
                 <form action="{{ route('orders.store') }}" method="POST" id="orderForm">
                     @csrf
                     <input type="hidden" name="table_id" value="{{ $mesa->id }}">
-                    <input type="hidden" name="send_to_kitchen" id="send_input" value="0">
+                    <input type="hidden" name="send_to_kitchen" id="send_input" value="1">
                     
                     <template x-for="(item, index) in items" :key="index">
                         <div>
@@ -153,17 +163,11 @@
                         </div>
                     </template>
 
-                    <div class="grid grid-cols-2 gap-3">
-                        <button type="submit" 
-                                class="py-3 px-2 rounded-xl border border-brand-dark text-brand-dark font-bold text-xs uppercase tracking-wider hover:bg-gray-50 active:scale-95 transition-all">
-                            Solo Guardar
-                        </button>
-                        <button type="button" 
-                                @click="document.getElementById('send_input').value = '1'; document.getElementById('orderForm').submit()"
-                                class="py-3 px-2 rounded-xl bg-brand-red text-white font-bold text-xs uppercase tracking-wider shadow-lg shadow-brand-red/30 hover:bg-[#C81E1E] active:scale-95 transition-all flex flex-col items-center justify-center">
-                            <span>Enviar a Cocina</span>
-                        </button>
-                    </div>
+                    <button type="submit" 
+                            class="w-full py-4 rounded-xl bg-brand-red text-white font-bold text-sm uppercase tracking-wider shadow-lg shadow-brand-red/30 hover:bg-[#C81E1E] active:scale-95 transition-all flex items-center justify-center gap-2">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+                        Enviar a Cocina
+                    </button>
                 </form>
             </div>
         </div>
@@ -176,6 +180,7 @@
     .custom-scrollbar::-webkit-scrollbar-thumb { background-color: rgba(0,0,0,0.1); border-radius: 20px; }
 </style>
 
+@push('scripts')
 <script>
     document.addEventListener('DOMContentLoaded', function() {
         function updateClock() {
@@ -197,4 +202,5 @@
         setInterval(updateClock, 1000);
     });
 </script>
+@endpush
 @endsection

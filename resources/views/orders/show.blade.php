@@ -1,12 +1,18 @@
 @extends('layouts.app')
 
 @section('content')
-<div id="main-order-container" class="container mx-auto px-4 py-6 font-sans text-brand-dark h-[calc(100vh-80px)]">
+<div id="main-order-container" class="container mx-auto px-4 py-6 font-sans text-brand-dark lg:h-[calc(100vh-80px)] h-auto">
 
     <div class="flex flex-col xl:flex-row justify-between items-end mb-6 border-b border-brand-gold/20 pb-4 gap-4">
-        <div>
-            <h6 class="text-brand-gray font-bold tracking-[0.2em] uppercase text-xs mb-1">Gestión de Pedido #{{ $order->id }}</h6>
-            <h1 class="font-serif text-3xl md:text-4xl font-bold text-brand-dark">Mesa {{ $order->mesa->number }}</h1>
+        <div class="flex items-center gap-4 w-full xl:w-auto">
+            <a href="{{ route('mesas.index') }}" 
+               class="flex-shrink-0 w-12 h-12 flex items-center justify-center rounded-full bg-white border border-brand-gold/30 text-brand-dark shadow-sm hover:bg-brand-gold hover:text-white transition-all duration-300 group">
+                <svg class="w-5 h-5 group-hover:-translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
+            </a>
+            <div>
+                <h6 class="text-brand-gray font-bold tracking-[0.2em] uppercase text-xs mb-1">Gestión de Pedido #{{ $order->id }}</h6>
+                <h1 class="font-serif text-3xl md:text-4xl font-bold text-brand-dark">Mesa {{ $order->mesa->number }}</h1>
+            </div>
         </div>
         
         <div class="flex flex-wrap items-center gap-3">
@@ -29,7 +35,9 @@
                 </div>
                 <div class="text-right">
                     <p class="text-[8px] font-bold text-brand-gray/60 uppercase tracking-widest leading-none mb-1">Fecha</p>
-                    <p id="live-date" class="text-[10px] font-bold text-brand-dark uppercase tracking-wide leading-none">CARGANDO...</p>
+                    <p id="live-date" class="text-[10px] font-bold text-brand-dark uppercase tracking-wide leading-none">
+                        {{ now()->setTimezone('America/Guayaquil')->locale('es')->isoFormat('dddd, D [de] MMMM [de] YYYY') }}
+                    </p>
                 </div>
             </div>
 
@@ -39,7 +47,9 @@
                 </div>
                 <div class="text-right">
                     <p class="text-[8px] font-bold text-brand-gray/60 uppercase tracking-widest leading-none mb-1">Hora</p>
-                    <p id="live-clock" class="text-lg font-serif font-bold text-brand-dark leading-none">--:--</p>
+                    <p id="live-clock" class="text-lg font-serif font-bold text-brand-dark leading-none">
+                        {{ now()->setTimezone('America/Guayaquil')->format('h:i A') }}
+                    </p>
                 </div>
             </div>
         </div>
@@ -62,9 +72,9 @@
         @endif
     </div>
 
-    <div class="flex flex-col lg:flex-row gap-6 h-full pb-20">
+    <div class="flex flex-col lg:flex-row gap-6 lg:h-full pb-10 lg:pb-20">
         
-        <div class="flex-1 overflow-y-auto pr-2 custom-scrollbar">
+        <div class="flex-1 lg:overflow-y-auto pr-0 lg:pr-2 custom-scrollbar">
             @foreach($categories as $category)
                 <div class="mb-8">
                     <h2 class="font-serif text-xl font-bold text-brand-red mb-4 flex items-center gap-3">
@@ -99,7 +109,7 @@
         </div>
 
         <div id="order-summary-container" 
-             class="w-full lg:w-[420px] flex flex-col h-full bg-white rounded-3xl shadow-xl border border-brand-gold/20 overflow-hidden relative"
+             class="w-full lg:w-[420px] flex flex-col bg-white rounded-3xl shadow-xl border border-brand-gold/20 overflow-hidden relative lg:h-full h-auto mt-6 lg:mt-0"
              x-data="{ 
                 showModal: false, 
                 paymentMethod: 'Efectivo'
@@ -110,7 +120,7 @@
                 <p class="text-brand-gray text-xs uppercase tracking-widest mt-1">Pedido #{{ $order->id }}</p>
             </div>
 
-            <div class="flex-1 overflow-y-auto p-4 space-y-3 custom-scrollbar bg-gray-50/50">
+            <div class="flex-1 lg:overflow-y-auto p-4 space-y-3 custom-scrollbar bg-gray-50/50 min-h-[250px] lg:min-h-0">
                 @foreach($order->items as $item)
                     <div class="bg-white p-3 rounded-xl shadow-sm border border-gray-100 flex items-center justify-between animate-fade-in-up">
                         <div class="flex items-baseline gap-2">
@@ -218,7 +228,7 @@
                     </div>
                 </div>
             </div>
-            </div>
+        </div>
     </div>
 </div>
 
