@@ -8,6 +8,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\Password;
+use App\Services\AuditLogger;
 
 class UserController extends Controller
 {
@@ -47,12 +48,14 @@ class UserController extends Controller
             'role' => ['required', Rule::enum(UserRole::class)],
         ]);
 
-        User::create([
+        $user = User::create([
             'name' => $request->name,
             'email' => $request->email,
             'password' => Hash::make($request->password),
             'role' => $request->role,
         ]);
+
+        AuditLogger::log('Create User', "Usuario creado: {$user->email} (ID: {$user->id})");
 
         return redirect()->route('users.index')->with('success', 'Usuario creado exitosamente.');
     }
@@ -95,6 +98,8 @@ class UserController extends Controller
 
         $user->update($userData);
 
+        AuditLogger::log('Edit User', "Usuario actualizado: {$user->email} (ID: {$user->id})");
+
         return redirect()->route('users.index')->with('success', 'Usuario actualizado exitosamente.');
     }
 
@@ -103,7 +108,12 @@ class UserController extends Controller
      */
     public function destroy(User $user)
     {
+        $email = $user->email;
+        $id = $user->id;
         $user->delete();
+
+        AuditLogger::log('Delete User', "Usuario eliminado: {$email} (ID: {$id})");
+
         return redirect()->route('users.index')->with('success', 'Usuario eliminado exitosamente.');
     }
 }

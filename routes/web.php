@@ -34,6 +34,10 @@ Route::get('/dashboard', [\App\Http\Controllers\DashboardController::class, 'ind
 Route::resource('users', \App\Http\Controllers\UserController::class)
     ->middleware(['auth', 'role:admin']);
 
+Route::get('/audit-logs', [\App\Http\Controllers\AuditLogController::class, 'index'])
+    ->middleware(['auth', 'role:admin'])
+    ->name('audit-logs.index');
+
 Route::get('/mesas', [MesaController::class, 'index'])
     ->middleware(['auth', 'role:admin,mesero']) // Ambos roles pueden ver las mesas
     ->name('mesas.index');

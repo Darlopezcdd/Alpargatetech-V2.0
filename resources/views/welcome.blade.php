@@ -214,8 +214,8 @@
             </div>
         </div>
         
-        <div class="absolute bottom-10 left-1/2 transform -translate-x-1/2 animate-float text-white/70 hover:text-brand-gold transition-colors cursor-pointer hidden md:block">
-             <a href="#nosotros" class="flex flex-col items-center">
+        <div class="absolute bottom-10 w-full flex justify-center animate-float text-white/70 hover:text-brand-gold transition-colors cursor-pointer hidden md:block">
+             <a href="#nosotros" class="flex flex-col items-center text-center">
                  <span class="text-[10px] uppercase tracking-widest mb-2">Descubre Más</span>
                  <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 14l-7 7m0 0l-7-7m7 7V3"></path></svg>
              </a>

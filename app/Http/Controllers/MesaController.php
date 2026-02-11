@@ -24,3 +24,4 @@ class MesaController extends Controller
         return view('mesas.index', compact('mesas', 'activeOrders'));
     }
 }
+    

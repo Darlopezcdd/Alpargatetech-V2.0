@@ -7,6 +7,7 @@ use Illuminate\Support\Facades\Auth;
 use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Str;
+use App\Services\AuditLogger;
 
 class LoginController extends Controller
 {
@@ -42,6 +43,8 @@ class LoginController extends Controller
             'ip_address' => $request->ip(),
             'login_at' => now(),
         ]);
+
+        AuditLogger::log('Login', 'Usuario inició sesión exitosamente.', $user->id);
     }
     public function logout(Request $request)
     {
@@ -50,7 +53,7 @@ class LoginController extends Controller
         $request->session()->regenerateToken();
         return redirect('/login');
     }
-//    public function store(Request $request)
+    //    public function store(Request $request)
 //    {
 //        $request->validate([
 //            'email' => 'required|email',
@@ -71,9 +74,9 @@ class LoginController extends Controller
 //        return back()->withErrors(['email' => 'Credenciales incorrectas.']);
 //    }
 
-// app/Http/Controllers/LoginController.php
+    // app/Http/Controllers/LoginController.php
 
-//    public function login(Request $request)
+    //    public function login(Request $request)
 //    {
 //        $request->validate([
 //            'email' => 'required|email',
@@ -101,7 +104,7 @@ class LoginController extends Controller
     public function login(Request $request)
     {
         // Crear una clave única para el usuario basada en su email e IP
-        $throttleKey = Str::transliterate(Str::lower($request->input('email')).'|'.$request->ip());
+        $throttleKey = Str::transliterate(Str::lower($request->input('email')) . '|' . $request->ip());
 
         // 1. Verificar si ya superó el límite de 3 intentos
         if (RateLimiter::tooManyAttempts($throttleKey, 3)) {
@@ -118,6 +121,10 @@ class LoginController extends Controller
             RateLimiter::clear($throttleKey);
 
             $user = Auth::user();
+
+            // Registrar Log de Auditoría
+            AuditLogger::log('Login', 'Usuario inició sesión exitosamente.', $user->id);
+
             $user->generateTwoFactorCode(); // Tu lógica de 2FA ya existente
             return redirect()->route('verify-2fa.index');
         }

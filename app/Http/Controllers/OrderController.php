@@ -13,6 +13,7 @@ use Illuminate\Support\Facades\Auth;
 use App\Models\Payment;
 use App\Events\OrderSentToKitchen;
 use App\Events\OrderReadyToServe;
+use App\Services\AuditLogger;
 class OrderController extends Controller
 {
 
@@ -52,6 +53,8 @@ class OrderController extends Controller
             // Pasamos una colección con UN solo item
             broadcast(new OrderSentToKitchen($order, collect([$newItem])));
 
+            AuditLogger::log('Order: Add Product', "Producto '{$product->name}' (x{$request->quantity}) añadido al Pedido #{$order->id}", auth()->id());
+
             return back()->with('success', 'Producto añadido y total actualizado.');
         } catch (\Exception $e) {
             DB::rollBack();
@@ -78,6 +81,8 @@ class OrderController extends Controller
 
         // Difundir a todos, incluyéndome a mí para la prueba
         broadcast(new OrderSentToKitchen($order));
+
+        AuditLogger::log('Order: Send to Kitchen', "Pedido #{$order->id} enviado a cocina (En Cocina)", auth()->id());
 
         return redirect()->route('mesas.index')->with('success', 'Pedido enviado.');
     }
@@ -117,6 +122,8 @@ class OrderController extends Controller
         // Mantenemos el evento original de tabla por si acaso
         broadcast(new \App\Events\TableStatusUpdated($order->table_id, $request->status, $order->id));
 
+        AuditLogger::log('Order: Status Update', "Pedido #{$order->id} actualizado a: {$request->status}", auth()->id());
+
         return back()->with('success', 'Estado del pedido #' . $order->id . ' actualizado.');
     }
     public function downloadInvoice(Order $order)
@@ -138,6 +145,8 @@ class OrderController extends Controller
 
             $order->mesa->update(['status' => TableStatus::LIBRE]);
         });
+
+        AuditLogger::log('Order: Pay', "Pago registrado para Pedido #{$order->id}. Método: {$request->payment_method}", auth()->id());
 
         // Flash con enlace de descarga
         return redirect()->route('mesas.index')->with('success', 'Pago registrado. <a href="' . route('orders.download-invoice', $order->id) . '" target="_blank" class="inline-block px-3 py-1 bg-yellow-500 text-white font-bold rounded hover:bg-yellow-600 transition-colors ml-2 no-underline">Descargar Nota de Venta</a>');
@@ -161,6 +170,8 @@ class OrderController extends Controller
 
             $order->mesa->update(['status' => TableStatus::LIBRE]);
         });
+
+        AuditLogger::log('Order: Checkout', "Pedido #{$order->id} cerrado y mesa liberada. Método de pago: {$request->payment_method}", auth()->id());
 
         return redirect()->route('mesas.index')->with('success', 'Pago procesado. <a href="' . route('orders.download-invoice', $order->id) . '" target="_blank" class="inline-block px-3 py-1 bg-yellow-500 text-white font-bold rounded hover:bg-yellow-600 transition-colors ml-2 no-underline">Descargar Nota de Venta</a>');
     }

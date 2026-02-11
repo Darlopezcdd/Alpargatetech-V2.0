@@ -10,6 +10,7 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rules\Password;
+use App\Services\AuditLogger;
 
 class PasswordResetController extends Controller
 {
@@ -35,6 +36,8 @@ class PasswordResetController extends Controller
 
         // Enviar el correo
         Mail::to($request->email)->send(new ResetPasswordCode($code));
+
+        AuditLogger::log('Password Reset Request', "Solicitud de restablecimiento de contraseña para: {$request->email}");
 
         return redirect()->route('password.verify', ['email' => $request->email]);
     }
@@ -98,6 +101,8 @@ class PasswordResetController extends Controller
 
         // Eliminar el código usado
         DB::table('password_reset_codes')->where('email', $request->email)->delete();
+
+        AuditLogger::log('Password Reset Success', "Contraseña restablecida exitosamente para: {$request->email}", $user->id);
 
         return redirect()->route('login')->with('status', '¡Contraseña restablecida correctamente!');
     }

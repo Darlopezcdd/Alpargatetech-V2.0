@@ -14,7 +14,7 @@
         $imgLogo = $getImg('logo-apargate3.jpeg');
     @endphp
 
-    <div class="container mx-auto px-4 py-8 font-sans text-brand-dark min-h-screen bg-gray-50 animate-fade-in-up">
+    <div class="container mx-auto px-4 py-8 font-sans text-brand-dark min-h-screen animate-fade-in-up">
 
         <div class="mb-10 flex flex-col xl:flex-row justify-between items-end gap-6 border-b border-brand-gold/20 pb-6">
             <div>

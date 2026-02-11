@@ -1,9 +1,10 @@
 @extends('layouts.app')
 
 @section('content')
-    <div class="sm:flex sm:items-center sm:justify-between mb-8">
+    <div class="sm:flex sm:items-center sm:justify-between mb-8 border-b border-brand-gold/20 pb-6">
         <div class="sm:flex-auto">
             <h1 class="text-3xl font-bold font-serif text-brand-dark">Gestión de Usuarios</h1>
+            <p class="mt-2 text-sm text-brand-gray">Administra los miembros del equipo y sus roles de acceso.</p>
         </div>
         <div class="mt-4 sm:mt-0 sm:ml-16 sm:flex-none">
             <a href="{{ route('users.create') }}"
