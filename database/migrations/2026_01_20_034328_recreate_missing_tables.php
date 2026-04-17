@@ -114,6 +114,21 @@ return new class extends Migration {
             $table->timestamps();
             $table->softDeletes();
         });
+
+        // 6. Auditoría del sistema
+        if (! Schema::hasTable('audit_logs')) {
+            Schema::create('audit_logs', function (Blueprint $table) {
+                $table->id();
+                $table->foreignId('user_id')->nullable()->constrained('users')->nullOnDelete();
+                $table->string('action', 100);
+                $table->text('description')->nullable();
+                $table->string('ip_address', 45)->nullable();
+                $table->timestamps();
+                $table->index(['user_id', 'created_at'], 'idx_audit_user_date');
+                $table->index('created_at', 'idx_audit_date');
+                $table->index('action', 'idx_audit_action');
+            });
+        }
     }
 
     public function down(): void
