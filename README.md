@@ -1,59 +1,141 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# AlpargateTech v2.0
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+Sistema de punto de venta (POS) para restaurantes con panel de cocina en tiempo real, gestión de inventario y reportes de ventas.
 
-## About Laravel
+## Stack Tecnológico
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+| Capa | Tecnología |
+|------|-----------|
+| Backend | Laravel 12 + PHP 8.2 |
+| Base de datos | PostgreSQL |
+| Frontend | Blade + Alpine.js + Tailwind CSS |
+| WebSockets | Laravel Reverb |
+| PDF | DomPDF |
+| Cola de trabajos | Laravel Queue (database) |
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+## Módulos del Sistema
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+| Módulo | Roles con acceso |
+|--------|----------------|
+| 🗺️ Mesas | Admin, Mesero |
+| 🍽️ Pedidos | Admin, Mesero |
+| 🔥 Cocina (tiempo real) | Admin, Cocinero |
+| 📊 Reportes & Ventas | Admin |
+| 🧂 Inventario - Ingredientes | Admin |
+| 🏢 Activos Fijos | Admin |
+| 🍕 Menú (Categorías + Productos) | Admin |
+| 👥 Clientes | Admin |
+| 🔐 Usuarios | Admin |
+| 📋 Auditoría | Admin |
 
-## Learning Laravel
+## Requisitos Previos
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework. You can also check out [Laravel Learn](https://laravel.com/learn), where you will be guided through building a modern Laravel application.
+- PHP 8.2+
+- Composer
+- Node.js 18+
+- PostgreSQL 14+
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+## Instalación
 
-## Laravel Sponsors
+```bash
+# 1. Clonar el repositorio
+git clone https://github.com/TU_USUARIO/ALPARGATETECH-v2.0.git
+cd ALPARGATETECH-v2.0
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the [Laravel Partners program](https://partners.laravel.com).
+# 2. Instalar dependencias PHP
+composer install
 
-### Premium Partners
+# 3. Instalar dependencias JavaScript
+npm install
 
-- **[Vehikl](https://vehikl.com)**
-- **[Tighten Co.](https://tighten.co)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel)**
-- **[DevSquad](https://devsquad.com/hire-laravel-developers)**
-- **[Redberry](https://redberry.international/laravel-development)**
-- **[Active Logic](https://activelogic.com)**
+# 4. Copiar y configurar variables de entorno
+cp .env.example .env
+# Editar .env con tu editor de texto
 
-## Contributing
+# 5. Generar clave de aplicación
+php artisan key:generate
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+# 6. Crear la base de datos en PostgreSQL
+# psql -U postgres -c "CREATE DATABASE alpargatetech;"
 
-## Code of Conduct
+# 7. Correr las migraciones y seeders
+php artisan migrate --seed
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+# 8. Compilar assets
+npm run build
+```
 
-## Security Vulnerabilities
+## Configuración del Correo (2FA)
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+El sistema usa autenticación de dos factores por correo. Para configurar Gmail:
 
-## License
+1. Ve a tu cuenta Google → **Seguridad** → **Verificación en 2 pasos**
+2. Al fondo de la página busca **Contraseñas de aplicación**
+3. Crea una contraseña para "Correo" y "Otro dispositivo"
+4. Copia la contraseña de 16 caracteres en tu `.env`:
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+```env
+MAIL_MAILER=smtp
+MAIL_HOST=smtp.gmail.com
+MAIL_PORT=587
+MAIL_USERNAME=tu_correo@gmail.com
+MAIL_PASSWORD=xxxx_xxxx_xxxx_xxxx
+MAIL_ENCRYPTION=tls
+MAIL_FROM_ADDRESS="tu_correo@gmail.com"
+```
+
+## Ejecutar en Desarrollo
+
+```bash
+composer run dev
+```
+
+Esto inicia simultáneamente:
+- Servidor PHP (`php artisan serve`)
+- Cola de trabajos (`php artisan queue:listen`)
+- Compilador Vite (`npm run dev`)
+- Servidor WebSocket Reverb (`php artisan reverb:start`)
+
+## Arquitectura
+
+```
+app/
+├── Http/
+│   ├── Controllers/     # Solo orquestación — sin lógica de negocio
+│   ├── Middleware/       # Autenticación, roles
+│   └── Requests/        # Validación con Form Requests
+├── Models/              # Eloquent ORM
+├── Services/            # Lógica de negocio (OrderService, AuditLogger)
+└── Enums/               # OrderStatus, TableStatus, UserRole
+
+resources/views/
+├── layouts/             # Layout principal con sidebar
+├── admin/               # Vistas de administración (menú, reportes)
+├── inventory/           # Módulo de inventario
+├── orders/              # Flujo de pedidos
+├── kitchen/             # Panel de cocina
+└── auth/                # Login, 2FA, recuperación de contraseña
+```
+
+## Roles y Permisos
+
+| Rol | Panel | Mesas | Pedidos | Cocina | Admin |
+|-----|-------|-------|---------|--------|-------|
+| `admin` | ✅ | ✅ | ✅ | ✅ | ✅ |
+| `mesero` | — | ✅ | ✅ | — | — |
+| `cocinero` | — | — | — | ✅ | — |
+
+## Flujo de un Pedido
+
+```
+Mesero selecciona mesa
+    → Escoge productos del menú
+        → Pedido creado (estado: En Cocina)
+            → Cocina recibe en tiempo real (WebSocket)
+                → Cocinero actualiza estado
+                    → Mesero entrega → Pago → Mesa libre
+```
+
+## Licencia
+
+Proyecto privado — Todos los derechos reservados.

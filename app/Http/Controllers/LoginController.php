@@ -4,134 +4,74 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Str;
 use App\Services\AuditLogger;
 
 class LoginController extends Controller
 {
+    // Vista del formulario de login
     public function showLoginForm()
     {
         return view('auth.login');
     }
 
-    // Procesa el login (RF-01)
-//    public function login(Request $request)
-//    {
-//        $request->validate([
-//            'email' => 'required|email',
-//            'password' => 'required',
-//        ], [
-//            'email.required' => 'El correo es obligatorio para entrar.',
-//            'email.email' => 'Debes ingresar un formato de correo válido.',
-//            'password.required' => 'La contraseña es obligatoria.',
-//        ]);
-//
-//        $credentials = $request->only('email', 'password');
-//
-//        if (Auth::attempt($credentials)) {
-//            $this->authenticated($request, Auth::user());
-//            return redirect()->intended('/dashboard');
-//        }
-//
-//        return back()->withErrors(['email' => 'Las credenciales no coinciden con nuestros registros.']);
-//    }
-    protected function authenticated(Request $request, $user)
-    {
-        $user->sessions()->create([
-            'ip_address' => $request->ip(),
-            'login_at' => now(),
-        ]);
-
-        AuditLogger::log('Login', 'Usuario inició sesión exitosamente.', $user->id);
-    }
-    public function logout(Request $request)
-    {
-        Auth::logout();
-        $request->session()->invalidate();
-        $request->session()->regenerateToken();
-        return redirect('/login');
-    }
-    //    public function store(Request $request)
-//    {
-//        $request->validate([
-//            'email' => 'required|email',
-//            'password' => 'required',
-//        ]);
-//
-//        // 1. Intentar validar las credenciales
-//        if (Auth::attempt($request->only('email', 'password'))) {
-//            $user = Auth::user();
-//
-//            // 2. Generar y enviar el código de 2FA
-//            $user->generateTwoFactorCode();
-//
-//            // 3. Redirigir a la vista donde se ingresa el código
-//            return redirect()->route('verify-2fa.index');
-//        }
-//
-//        return back()->withErrors(['email' => 'Credenciales incorrectas.']);
-//    }
-
-    // app/Http/Controllers/LoginController.php
-
-    //    public function login(Request $request)
-//    {
-//        $request->validate([
-//            'email' => 'required|email',
-//            'password' => 'required',
-//        ]);
-//
-//        $credentials = $request->only('email', 'password');
-//
-//        if (Auth::attempt($credentials)) {
-//            $user = Auth::user();
-//
-//            // 1. Generar y enviar el código
-//            $user->generateTwoFactorCode();
-//
-//            // 2. IMPORTANTE: Cerramos la sesión pero recordamos al usuario en la sesión del navegador
-//            // para que el middleware no lo deje pasar sin el código.
-//            return redirect()->route('verify-2fa.index');
-//        }
-//
-//        return back()->withErrors(['email' => 'Las credenciales no coinciden.']);
-//    }
-
-
-
+    // Procesar login con rate limiting y 2FA
     public function login(Request $request)
     {
-        // Crear una clave única para el usuario basada en su email e IP
+        $request->validate([
+            'email'    => 'required|email',
+            'password' => 'required',
+        ], [
+            'email.required'    => 'El correo es obligatorio.',
+            'email.email'       => 'Ingresa un correo válido.',
+            'password.required' => 'La contraseña es obligatoria.',
+        ]);
+
+        // Rate limiting: máximo 3 intentos por 10 minutos
         $throttleKey = Str::transliterate(Str::lower($request->input('email')) . '|' . $request->ip());
 
-        // 1. Verificar si ya superó el límite de 3 intentos
         if (RateLimiter::tooManyAttempts($throttleKey, 3)) {
             $seconds = RateLimiter::availableIn($throttleKey);
             return back()->withErrors([
-                'email' => "Demasiados intentos. Acceso bloqueado por " . ceil($seconds / 60) . " minutos."
+                'email' => "Demasiados intentos fallidos. Acceso bloqueado por " . ceil($seconds / 60) . " minutos.",
             ]);
         }
 
-        $credentials = $request->only('email', 'password');
-
-        if (Auth::attempt($credentials)) {
-            // Si el login es exitoso, limpiamos el contador de intentos
+        if (Auth::attempt($request->only('email', 'password'))) {
             RateLimiter::clear($throttleKey);
 
             $user = Auth::user();
 
-            // Registrar Log de Auditoría
+            // Registrar sesión activa
+            $user->sessions()->create([
+                'ip_address' => $request->ip(),
+                'login_at'   => now(),
+            ]);
+
             AuditLogger::log('Login', 'Usuario inició sesión exitosamente.', $user->id);
 
-            $user->generateTwoFactorCode(); // Tu lógica de 2FA ya existente
+            // Generar y enviar código 2FA por correo
+            $user->generateTwoFactorCode();
+
             return redirect()->route('verify-2fa.index');
         }
 
-        // 2. Si falla, registramos un "hit" que expira en 600 segundos (10 minutos)
+        // Registrar intento fallido
         RateLimiter::hit($throttleKey, 600);
 
-        return back()->withErrors(['email' => 'Credenciales incorrectas.']);
+        return back()->withErrors(['email' => 'Correo o contraseña incorrectos.']);
+    }
+
+    // Cerrar sesión
+    public function logout(Request $request)
+    {
+        AuditLogger::log('Logout', 'Usuario cerró sesión.', Auth::id());
+
+        Auth::logout();
+        $request->session()->invalidate();
+        $request->session()->regenerateToken();
+
+        return redirect('/login');
     }
 }

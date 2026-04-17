@@ -1,82 +1,99 @@
 <?php
+
 use App\Http\Controllers\LoginController;
-use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\MesaController;
 use App\Http\Controllers\OrderController;
+use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\UserController;
+use App\Http\Controllers\AuditLogController;
+use App\Http\Controllers\PasswordResetController;
+use App\Http\Controllers\Auth\VerifyTwoFactorController;
+use App\Http\Controllers\IngredientController;
+use App\Http\Controllers\FixedAssetController;
+use App\Http\Controllers\CategoryController;
+use App\Http\Controllers\ProductController;
+use App\Http\Controllers\ReportController;
+use App\Http\Controllers\ClientController;
+use Illuminate\Support\Facades\Route;
 
-Route::get('/', function () {
-    return view('welcome');
+// Raíz → redirige al login
+Route::get('/', fn () => redirect()->route('login'));
+
+// ─── Rutas para invitados (no autenticados) ───────────────────────────────────
+Route::middleware('guest')->group(function () {
+    Route::get('/login',  [LoginController::class, 'showLoginForm'])->name('login');
+    Route::post('/login', [LoginController::class, 'login']);
+
+    // Recuperación de contraseña
+    Route::get('/forgot-password',  [PasswordResetController::class, 'showLinkRequestForm'])->name('password.request');
+    Route::post('/forgot-password', [PasswordResetController::class, 'sendResetCode'])->name('password.email');
+    Route::get('/verify-code',      [PasswordResetController::class, 'showVerifyForm'])->name('password.verify');
+    Route::post('/verify-code',     [PasswordResetController::class, 'verifyCode'])->name('password.check');
+    Route::get('/reset-password',   [PasswordResetController::class, 'showResetForm'])->name('password.reset');
+    Route::post('/reset-password',  [PasswordResetController::class, 'resetPassword'])->name('password.update');
 });
 
-// DEBUG: Route to catch WebSocket requests that aren't proxied by Nginx
-Route::any('/app/{any}', function ($any) {
-    return "DEBUG: HIT LARAVEL ROUTER for /app/" . $any;
-})->where('any', '.*');
-
-// Rutas de Autenticación (RF-01)
-Route::get('/login', [LoginController::class, 'showLoginForm'])->name('login');
-Route::post('/login', [LoginController::class, 'login']);
+// Cerrar sesión (accesible desde cualquier estado)
 Route::post('/logout', [LoginController::class, 'logout'])->name('logout');
 
-// Rutas de Recuperación de Contraseña
-Route::get('/forgot-password', [App\Http\Controllers\PasswordResetController::class, 'showLinkRequestForm'])->name('password.request');
-Route::post('/forgot-password', [App\Http\Controllers\PasswordResetController::class, 'sendResetCode'])->name('password.email');
-Route::get('/verify-code', [App\Http\Controllers\PasswordResetController::class, 'showVerifyForm'])->name('password.verify');
-Route::post('/verify-code', [App\Http\Controllers\PasswordResetController::class, 'verifyCode'])->name('password.check');
-Route::get('/reset-password', [App\Http\Controllers\PasswordResetController::class, 'showResetForm'])->name('password.reset');
-Route::post('/reset-password', [App\Http\Controllers\PasswordResetController::class, 'resetPassword'])->name('password.update');
+// ─── Verificación 2FA ─────────────────────────────────────────────────────────
+Route::middleware('auth')->group(function () {
+    Route::get('/verify-2fa',  [VerifyTwoFactorController::class, 'index'])->name('verify-2fa.index');
+    Route::post('/verify-2fa', [VerifyTwoFactorController::class, 'store'])->name('verify-2fa.store');
+});
 
-// Ruta del Dashboard Protegida
-Route::get('/dashboard', [\App\Http\Controllers\DashboardController::class, 'index'])
-    ->middleware(['auth', 'role:admin'])
-    ->name('dashboard');
+// ─── Rutas protegidas (autenticado) ──────────────────────────────────────────
+Route::middleware('auth')->group(function () {
 
-Route::resource('users', \App\Http\Controllers\UserController::class)
-    ->middleware(['auth', 'role:admin']);
+    // Dashboard — solo admin
+    Route::get('/dashboard', [DashboardController::class, 'index'])
+        ->middleware('role:admin')
+        ->name('dashboard');
 
-Route::get('/audit-logs', [\App\Http\Controllers\AuditLogController::class, 'index'])
-    ->middleware(['auth', 'role:admin'])
-    ->name('audit-logs.index');
+    // Mesas — admin y mesero
+    Route::get('/mesas', [MesaController::class, 'index'])
+        ->middleware('role:admin,mesero')
+        ->name('mesas.index');
 
-Route::get('/mesas', [MesaController::class, 'index'])
-    ->middleware(['auth', 'role:admin,mesero']) // Ambos roles pueden ver las mesas
-    ->name('mesas.index');
+    // Panel de cocina — cocinero y admin
+    Route::get('/cocina', [OrderController::class, 'kitchenIndex'])
+        ->middleware('role:cocinero,admin')
+        ->name('kitchen.index');
 
-Route::get('/cocina', [OrderController::class, 'kitchenIndex'])
-    ->middleware(['auth', 'role:cocinero,admin'])
-    ->name('kitchen.index');
-
-// Ruta genérica para actualizar estados de pedido
-Route::post('/orders/{order}/status', [OrderController::class, 'updateStatus'])
-    ->name('orders.update-status');
-
-// Rutas para la gestión de pedidos (RF-06, RF-08, RF-15)
-Route::middleware(['auth'])->group(function () {
-    // 1. Crear el pedido desde el mapa de mesas
-// El botón del mapa ahora es GET, solo para ver el menú
-    Route::get('/orders/create', [OrderController::class, 'create'])->name('orders.create');
-
-    // Este es el que procesa la operación Maestro-Detalle con Rollback
-    Route::post('/orders/store', [OrderController::class, 'store'])->name('orders.store');
-    // 2. Ver la comanda para añadir productos
-    Route::get('/orders/{order}', [OrderController::class, 'show'])->name('orders.show');
-
-    // DESCARGAR FACTURA
-    Route::get('/orders/{order}/invoice', [OrderController::class, 'downloadInvoice'])->name('orders.download-invoice');
-
-    // 3. Lógica para añadir platos y enviar a cocina
-    Route::post('/orders/{order}/add', [OrderController::class, 'addProduct'])->name('orders.add-product');
-    Route::post('/orders/{order}/send', [OrderController::class, 'sendToKitchen'])->name('orders.send-to-kitchen');
-
-    // 4. Facturación y Cierre (RF-15)
-    Route::post('/orders/{order}/pay', [OrderController::class, 'pay'])->name('orders.pay');
-    Route::post('/orders/{order}/checkout', [OrderController::class, 'checkout'])->name('orders.checkout');
-
-
-    // Rutas de 2FA (Añadir después de las rutas de login)
-    Route::middleware(['auth'])->group(function () {
-        Route::get('/verify-2fa', [App\Http\Controllers\Auth\VerifyTwoFactorController::class, 'index'])->name('verify-2fa.index');
-        Route::post('/verify-2fa', [App\Http\Controllers\Auth\VerifyTwoFactorController::class, 'store'])->name('verify-2fa.store');
+    // ─── Pedidos ─────────────────────────────────────────────────────────────
+    Route::prefix('orders')->name('orders.')->group(function () {
+        Route::get('/create',           [OrderController::class, 'create'])->name('create');
+        Route::post('/store',           [OrderController::class, 'store'])->name('store');
+        Route::get('/{order}',          [OrderController::class, 'show'])->name('show');
+        Route::get('/{order}/invoice',  [OrderController::class, 'downloadInvoice'])->name('download-invoice');
+        Route::post('/{order}/add',     [OrderController::class, 'addProduct'])->name('add-product');
+        Route::post('/{order}/send',    [OrderController::class, 'sendToKitchen'])->name('send-to-kitchen');
+        Route::post('/{order}/status',  [OrderController::class, 'updateStatus'])->name('update-status');
+        Route::post('/{order}/checkout',[OrderController::class, 'checkout'])->name('checkout');
     });
 
+    // ─── Gestión de Usuarios y Auditoría (admin) ─────────────────────────────
+    Route::middleware('role:admin')->group(function () {
+        Route::resource('users', UserController::class);
+        Route::get('audit-logs', [AuditLogController::class, 'index'])->name('audit-logs.index');
+    });
+
+    // ─── Módulos de Administración bajo /admin/ ───────────────────────────────
+    Route::middleware('role:admin')->prefix('admin')->name('admin.')->group(function () {
+
+        // Menú: categorías y productos
+        Route::resource('categories', CategoryController::class)->except(['show']);
+        Route::resource('products',   ProductController::class)->except(['show']);
+
+        // Inventario: ingredientes y activos fijos
+        Route::resource('ingredients',  IngredientController::class)->except(['show']);
+        Route::resource('fixed-assets', FixedAssetController::class)->except(['show'])
+            ->parameters(['fixed-assets' => 'fixedAsset']);
+
+        // Clientes
+        Route::resource('clients', ClientController::class)->except(['show']);
+
+        // Reportes y análisis de ventas
+        Route::get('reports', [ReportController::class, 'index'])->name('reports.index');
+    });
 });
