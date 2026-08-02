@@ -1,141 +1,67 @@
 # AlpargateTech v2.0
 
-Sistema de punto de venta (POS) para restaurantes con panel de cocina en tiempo real, gestión de inventario y reportes de ventas.
+A Point of Sale (POS) system for restaurants featuring a real-time kitchen dashboard, inventory management, and sales reporting.
 
-## Stack Tecnológico
+## 🌟 Key Features
 
-| Capa | Tecnología |
-|------|-----------|
-| Backend | Laravel 12 + PHP 8.2 |
-| Base de datos | PostgreSQL |
-| Frontend | Blade + Alpine.js + Tailwind CSS |
-| WebSockets | Laravel Reverb |
-| PDF | DomPDF |
-| Cola de trabajos | Laravel Queue (database) |
+*   **Real-time Kitchen Dashboard:** Orders are instantly sent to the kitchen using WebSockets.
+*   **Comprehensive Order Management:** Waiters can select tables, pick items from the menu, and manage orders seamlessly.
+*   **Inventory Control:** Track ingredients and fixed assets efficiently.
+*   **Detailed Reporting:** Generate sales and performance reports.
+*   **Role-based Access Control:** Dedicated panels and permissions for Admins, Waiters, and Kitchen staff.
+*   **Secure Authentication:** Includes 2FA (Two-Factor Authentication) via email.
 
-## Módulos del Sistema
+## 📸 Screenshots
 
-| Módulo | Roles con acceso |
-|--------|----------------|
-| 🗺️ Mesas | Admin, Mesero |
-| 🍽️ Pedidos | Admin, Mesero |
-| 🔥 Cocina (tiempo real) | Admin, Cocinero |
-| 📊 Reportes & Ventas | Admin |
-| 🧂 Inventario - Ingredientes | Admin |
-| 🏢 Activos Fijos | Admin |
-| 🍕 Menú (Categorías + Productos) | Admin |
-| 👥 Clientes | Admin |
-| 🔐 Usuarios | Admin |
-| 📋 Auditoría | Admin |
+![Dashboard Placeholder](https://via.placeholder.com/800x400?text=Dashboard+Overview)
+*(Placeholder: Dashboard overview showing sales and active tables)*
 
-## Requisitos Previos
+![Kitchen Panel Placeholder](https://via.placeholder.com/800x400?text=Real-time+Kitchen+View)
+*(Placeholder: Real-time kitchen view displaying pending orders)*
 
-- PHP 8.2+
-- Composer
-- Node.js 18+
-- PostgreSQL 14+
+## 🛠️ Technology Stack
 
-## Instalación
+*   **Backend:** Laravel 12 + PHP 8.2
+*   **Database:** PostgreSQL
+*   **Frontend:** Blade + Alpine.js + Tailwind CSS
+*   **Real-time / WebSockets:** Laravel Reverb
+*   **PDF Generation:** DomPDF
+*   **Job Queues:** Laravel Queue (Database driver)
 
-```bash
-# 1. Clonar el repositorio
-git clone https://github.com/TU_USUARIO/ALPARGATETECH-v2.0.git
-cd ALPARGATETECH-v2.0
+## 📋 Prerequisites
 
-# 2. Instalar dependencias PHP
-composer install
+*   PHP 8.2+
+*   Composer
+*   Node.js 18+
+*   PostgreSQL 14+
 
-# 3. Instalar dependencias JavaScript
-npm install
+## 🚀 Installation & Setup
 
-# 4. Copiar y configurar variables de entorno
-cp .env.example .env
-# Editar .env con tu editor de texto
+1.  **Clone the repository:**
+    ```bash
+    git clone https://github.com/Darlopezcdd/Alpargatetech-V2.0.git
+    cd Alpargatetech-V2.0
+    ```
+2.  **Install Dependencies:**
+    ```bash
+    composer install
+    npm install
+    ```
+3.  **Environment Setup:**
+    ```bash
+    cp .env.example .env
+    php artisan key:generate
+    ```
+4.  **Database Configuration:**
+    Create a database in PostgreSQL and run migrations.
+    ```bash
+    php artisan migrate --seed
+    ```
+5.  **Compile Assets & Run Server:**
+    ```bash
+    npm run build
+    composer run dev
+    ```
 
-# 5. Generar clave de aplicación
-php artisan key:generate
-
-# 6. Crear la base de datos en PostgreSQL
-# psql -U postgres -c "CREATE DATABASE alpargatetech;"
-
-# 7. Correr las migraciones y seeders
-php artisan migrate --seed
-
-# 8. Compilar assets
-npm run build
-```
-
-## Configuración del Correo (2FA)
-
-El sistema usa autenticación de dos factores por correo. Para configurar Gmail:
-
-1. Ve a tu cuenta Google → **Seguridad** → **Verificación en 2 pasos**
-2. Al fondo de la página busca **Contraseñas de aplicación**
-3. Crea una contraseña para "Correo" y "Otro dispositivo"
-4. Copia la contraseña de 16 caracteres en tu `.env`:
-
-```env
-MAIL_MAILER=smtp
-MAIL_HOST=smtp.gmail.com
-MAIL_PORT=587
-MAIL_USERNAME=tu_correo@gmail.com
-MAIL_PASSWORD=xxxx_xxxx_xxxx_xxxx
-MAIL_ENCRYPTION=tls
-MAIL_FROM_ADDRESS="tu_correo@gmail.com"
-```
-
-## Ejecutar en Desarrollo
-
-```bash
-composer run dev
-```
-
-Esto inicia simultáneamente:
-- Servidor PHP (`php artisan serve`)
-- Cola de trabajos (`php artisan queue:listen`)
-- Compilador Vite (`npm run dev`)
-- Servidor WebSocket Reverb (`php artisan reverb:start`)
-
-## Arquitectura
-
-```
-app/
-├── Http/
-│   ├── Controllers/     # Solo orquestación — sin lógica de negocio
-│   ├── Middleware/       # Autenticación, roles
-│   └── Requests/        # Validación con Form Requests
-├── Models/              # Eloquent ORM
-├── Services/            # Lógica de negocio (OrderService, AuditLogger)
-└── Enums/               # OrderStatus, TableStatus, UserRole
-
-resources/views/
-├── layouts/             # Layout principal con sidebar
-├── admin/               # Vistas de administración (menú, reportes)
-├── inventory/           # Módulo de inventario
-├── orders/              # Flujo de pedidos
-├── kitchen/             # Panel de cocina
-└── auth/                # Login, 2FA, recuperación de contraseña
-```
-
-## Roles y Permisos
-
-| Rol | Panel | Mesas | Pedidos | Cocina | Admin |
-|-----|-------|-------|---------|--------|-------|
-| `admin` | ✅ | ✅ | ✅ | ✅ | ✅ |
-| `mesero` | — | ✅ | ✅ | — | — |
-| `cocinero` | — | — | — | ✅ | — |
-
-## Flujo de un Pedido
-
-```
-Mesero selecciona mesa
-    → Escoge productos del menú
-        → Pedido creado (estado: En Cocina)
-            → Cocina recibe en tiempo real (WebSocket)
-                → Cocinero actualiza estado
-                    → Mesero entrega → Pago → Mesa libre
-```
-
-## Licencia
-
-Proyecto privado — Todos los derechos reservados.
+## 🔒 License
+Private project — All rights reserved.
